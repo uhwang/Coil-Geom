@@ -22,6 +22,7 @@ pip install coil-geom
   <img src="images/coil-diag-04.jpg">
   <img src="images/coil-diag-05.jpg">
 </p>
+
 ```Python
 import matplotlib.pyplot as plt
 import coil_geom as cg
