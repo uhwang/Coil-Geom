@@ -20,3 +20,8 @@ pip install coil-geom
 ![Image](https://github.com/user-attachments/assets/0777fae2-3e38-4f77-b95b-44014d9ad253)
 
 ![Image](https://github.com/user-attachments/assets/453a6974-6da3-4f2d-889b-9ee780561741)
+
+<p align="center">
+  <img src="images/circle_coil.jpg" width="300">
+  <img src="images/ellipse_coil.jpg" width="300">
+</p>
