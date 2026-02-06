@@ -13,7 +13,7 @@ It is designed for engineering, scientific visualization, and symbolic / schemat
 
 ```bash
 pip install coil-geom
-
+```
 ## Method
 ![Image](https://github.com/user-attachments/assets/40de909b-b5c7-41dc-b4f6-8cce57394f91)
 
