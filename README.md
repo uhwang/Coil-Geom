@@ -17,7 +17,10 @@ An ellipse is a curve in the xy-plane defined by two fixed points called foci. F
 
 $$\overline{PF_1} + \overline{PF_2} = 2a$$
 
-To see why the constant equals $2a$, consider the special case where $P$ lies on the y-axis $(x = 0)$. By symmetry, the distances to both foci are equal: $|\overline{PF_2}| = |\overline{PF_1}|$. Equation (1.1) then becomes $\overline{PF_1} + \overline{PF_2} = 2\overline{PF_1}$. At this point $P=(0,b)$, so $|\overline{PF_1}| = \sqrt{(x-c)^2+y^2}$. Setting this equal to $a$ gives us the important relationship:
+To see why the constant equals $2a$, consider the special case where $P$ lies on the y-axis $(x = 0)$. By symmetry, the distances to both foci are equal: $|\overline{PF_2}| = |\overline{PF_1}|$. Equation (1.1) then becomes $\overline{PF_1} + \overline{PF_2} = 2\overline{PF_1}$. At this point $P=(0,b)$, so 
+$$|\overline{PF_1}| = \sqrt{(x-c)^2+y^2}$$ 
+
+Setting this equal to $a$ gives us the important relationship:
 
 
 $$c^2 + b^2 = a^2$$
