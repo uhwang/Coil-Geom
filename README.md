@@ -15,12 +15,12 @@ It is designed for engineering, scientific visualization, and symbolic / schemat
 An ellipse is a curve in the xy-plane defined by two fixed points called foci. For any point on the ellipse, the sum of its distances to the two foci is always the same constant. We place the foci on the x-axis, symmetrically about the origin, at $(-c,0)$ and $(+c,0)$. Let $P(x, y)$ be any point on the ellipse, and let $F_1$ and $F_2$ be the left and right foci respectively. We define the sum of distances as:
 
 
-$$\overline{PF_1} + \overline{PF_2} = 2a \tag{1.1}$$
+$$\overline{PF_1} + \overline{PF_2} = 2a$$
 
 To see why the constant equals $2a$, consider the special case where $P$ lies on the y-axis $(x = 0)$. By symmetry, the distances to both foci are equal: $|\overline{PF_2}| = |\overline{PF_1}|$. Equation (1.1) then becomes $\overline{PF_1} + \overline{PF_2} = 2\overline{PF_1}$. At this point $P=(0,b)$, so $|\overline{PF_1}| = \sqrt{(x-c)^2+y^2}$. Setting this equal to $a$ gives us the important relationship:
 
 
-$$c^2 + b^2 = a^2 \tag{1.2}$$
+$$c^2 + b^2 = a^2$$
 
 Here $a$ is the semi-major axis, $b$ is the semi-minor axis, and $c$ is the distance from the center to each focus.
 
