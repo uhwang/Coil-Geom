@@ -30,7 +30,7 @@ def create_coil_geom(coil, trace):
     angle_fillet1 = np.atan2(p1[1],p1[0])
     angle_fillet2 = np.atan2(p2[1],p2[0])
     
-    if coil.coil_type == coil_util._circle_coil:
+    if coil.coil_type == coil_util._coil_type_circle:
         axlen = coil.r
         bxlen = coil.r
         t_star1 = angle_fillet1
@@ -65,7 +65,7 @@ def create_coil_geom(coil, trace):
         return index+npnt
     
     # First coil
-    if coil.coil_type == coil_util._circle_coil:
+    if coil.coil_type == coil_util._coil_type_circle:
         #start_angle = _pi if p_dist >= 0 else -_pi
         start_angle = _pi if p_dist < 0 else -_pi
         end_angle = t_star1
@@ -92,18 +92,19 @@ def create_coil_geom(coil, trace):
     for i in range(1, ncoil-1):
         # Next sub coil
         cx_sub = sx_sub+dist_sub_coil*(i-1)
-        if hasattr(coil, "a_s"):
-            axlen = coil.a_s
-            bxlen = coil.b_s
-            sy_sub= coil.yc_s
-            start_angle = coil.phi_s
-            end_angle = coil.phi_e
-        else:
+        if coil.coil_type == coil_util._coil_type_circle or \
+           coil.coil_type == coil_util._coil_type_ellipse:
             axlen = r_fillet
             bxlen = r_fillet
             sy_sub = coil.P[3]
             start_angle = t_star3
             end_angle = t_star4
+        elif hasattr(coil, "a_s"):
+            axlen = coil.a_s
+            bxlen = coil.b_s
+            sy_sub= coil.yc_s
+            start_angle = coil.phi_s
+            end_angle = coil.phi_e
             
         cur_index = create_segment(cx_sub, 
                                    sy_sub, 
@@ -120,22 +121,26 @@ def create_coil_geom(coil, trace):
         
         # Next Coil
         sx += dist_coil
-        if coil.coil_type == coil_util._circle_coil:
+        if coil.coil_type == coil_util._coil_type_circle:
             #start_angle = _pi2+angle_fillet2 if p_dist >= 0 \
             start_angle = _pi2+angle_fillet2 if p_dist < 0 \
                           else angle_fillet2
             end_angle = angle_fillet1 if p_dist >= 0 \
                         else _pi2+angle_fillet1
+            axlen = coil.r
+            bxlen = coil.r
         else:
             start_angle = t_star2 #if p_dist >= 0 else angle_fillet2
             #end_angle = coil.t_star-_pi2 if p_dist >= 0 \
             end_angle = coil.t_star-_pi2 if p_dist < 0 \
                         else _pi2+coil.t_star
+            axlen = coil.axlen
+            bxlen = coil.bxlen
             
         cur_index = create_segment(sx, 
                                    sy, 
-                                   coil.axlen, 
-                                   coil.bxlen, 
+                                   axlen, 
+                                   bxlen, 
                                    start_angle, 
                                    end_angle, 
                                    npnt,
@@ -151,18 +156,19 @@ def create_coil_geom(coil, trace):
         cx_sub += dist_sub_coil
     
     if ncoil > 1:
-        if hasattr(coil, "a_s"):
-            axlen = coil.a_s
-            bxlen = coil.b_s
-            sy_sub= coil.yc_s
-            start_angle = coil.phi_s
-            end_angle = coil.phi_e
-        else:
+        if coil.coil_type == coil_util._coil_type_circle or \
+           coil.coil_type == coil_util._coil_type_ellipse:
             axlen = r_fillet
             bxlen = r_fillet
             sy_sub = coil.P[3]
             start_angle = t_star3
             end_angle = t_star4
+        elif hasattr(coil, "a_s"):
+            axlen = coil.a_s
+            bxlen = coil.b_s
+            sy_sub= coil.yc_s
+            start_angle = coil.phi_s
+            end_angle = coil.phi_e
    
         cur_index = create_segment(cx_sub, 
                                    sy_sub, 
@@ -179,21 +185,25 @@ def create_coil_geom(coil, trace):
         prv_index = cur_index
                 
         sx += dist_coil
-        if coil.coil_type == coil_util._circle_coil:
+        if coil.coil_type == coil_util._coil_type_circle:
             #start_angle = _pi2+angle_fillet2 if p_dist >= 0 \
             start_angle = _pi2+angle_fillet2 if p_dist < 0 \
                          else angle_fillet2
             #end_angle = 0 if p_dist >= 0 else _pi2
             end_angle = 0 if p_dist < 0 else _pi2
+            axlen = coil.r
+            bxlen = coil.r
         else:
             start_angle = t_star2 
             #end_angle = 0 if p_dist >= 0 else _pi2
             end_angle = 0 if p_dist < 0 else _pi2
+            axlen = coil.axlen
+            bxlen = coil.bxlen
 
         cur_index = create_segment( sx, 
                                     sy, 
-                                    coil.axlen, 
-                                    coil.bxlen, 
+                                    axlen, 
+                                    bxlen, 
                                     start_angle, 
                                     end_angle, 
                                     npnt, 
