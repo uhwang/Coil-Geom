@@ -11,7 +11,7 @@ else:
 _deg = 180/3.14159265358979
 
 def print_coil(c):
-    direction = "DN" if c.p_dist >= 0 else "UP"
+    direction = "UP" if c.p_dist >= 0 else "DN"
     
     info_1 = f"====================================\n" \
              f"Type : {c.coil_type}\n" \
@@ -37,14 +37,18 @@ def print_coil(c):
              f"P2   : {', '.join(f'{x:.3f}' for x in c.P2)}\n" \
              f"p_d  : {c.p_dist:2.3f}\n" \
              f"r_f  : {c.r_fillet:2.3f}\n" \
-             f"t_*  : {c.t_star:2.3f}({c.t_star*_deg:2.3f})\n" \
-             f"Npnt : {c.npnt}\n" \
-             f"Ax   : {c.axlen}\n" \
-             f"Bx   : {c.bxlen}\n" \
-             f"====================================\n"
+             f"Npnt : {c.npnt}\n" 
+    if hasattr(c, "a_s"):
+        info_2 = f"t_*  : {c.t_star:2.3f}({c.t_star*_deg:2.3f})\n" \
+                 f"Ax   : {c.axlen}\n" \
+                 f"Bx   : {c.bxlen}\n" 
+    else:
+        info_2 = f"r    : {c.r:2.3f}\n" 
+        
+    info_3 = f"====================================\n"
              
     if hasattr(c, "a_s"):
-        info_2 = f"Ys Optimize\n" \
+        info_4 = f"Ys Optimize\n" \
                  f"====================================\n" \
                  f"a_s  : {c.a_s:2.3f}\n" \
                  f"b_s  : {c.b_s:2.3f}\n" \
@@ -56,11 +60,11 @@ def print_coil(c):
                  f"Delta: {c.delta:2.3f}\n" 
                  
         if c.coil_type == cu._coil_type_ellipse_shape:
-            info_3 = f"b/a  : {c.bxlen/c.axlen:2.3f}\n" \
+            info_5 = f"b/a  : {c.bxlen/c.axlen:2.3f}\n" \
                      f"bs/as: {c.b_s/c.a_s:2.3f}\n" \
                      "====================================\n" 
         else:
-            info_3 = "====================================\n" 
-        return info_1+info_2+info_3
-    return info_1    
+            info_5 = "====================================\n" 
+        return info_1+info_2+info_3+info_4+info_5
+    return info_1+info_2+info_3    
     
