@@ -105,7 +105,8 @@ class EllipseCoil(CoilGeom, VectorDiagram):
                            ncoil, 
                            npnt, 
                            npnt_sub )
-        
+                           
+        self.coil_type = get_coil_type(self)
         self.axlen = axlen
         self.bxlen = bxlen
         self.create_vector()
@@ -375,7 +376,8 @@ class CircleCoil(CoilGeom, VectorDiagram):
                                 
         self.coil_type = get_coil_type(self)
         self.r = r
-        self.c2x += r*r_dist
+        self.axlen = r
+        self.bxlen = r
         self.create_vector()
         
     def create_vector(self):
@@ -416,13 +418,13 @@ class CircleCoil(CoilGeom, VectorDiagram):
         P, V1, V2, R = self.P[2:], self.v1[2:], self.v2[2:], self.r
         
         L = P - V1
-        L_len = _norm_vec(L)
+        L_len = coil_util._norm_vec(L)
         self.r_fillet = np.abs(R-L_len)
         uv=L/L_len
         f1 = self.r_fillet*uv
         
         L = P - V2
-        L_len = _norm_vec(L)
+        L_len = coil_util._norm_vec(L)
         uv=L/L_len
         f2 = self.r_fillet*uv
     
@@ -434,7 +436,9 @@ class CircleCoil(CoilGeom, VectorDiagram):
                        self.P[3], 
                        self.P[2]+f2[0], 
                        self.P[3]+f2[1])
-        
+        p1 = self.P1[2:]-self.P1[0:2]
+        self.t_star = np.atan2(p1[1],p1[0])
+    
     def create_geom(self, cx = 1,
                           cy = 1,
                           r = 1,
@@ -445,32 +449,32 @@ class CircleCoil(CoilGeom, VectorDiagram):
                           npnt_sub = 25,
                           trace = False):
     
-        check_ncoil = [ncoil < 2, self.ncoil < 2]
-        if any(check_ncoil):
-            print(f"=> Invalid number of coil: ncoil{ncoil} or self.ncoil{self.ncoil}")
-            return
+            check_ncoil = [ncoil < 2, self.ncoil < 2]
+            if any(check_ncoil):
+                print(f"=> Invalid number of coil: ncoil{ncoil} or self.ncoil{self.ncoil}")
+                return
+                
+            updates = [
+                ("cx", cx, cx != self.cx),
+                ("cy", cy, cy != self.cy),
+                ("r", r, r != self.r),
+                #("ncoil", ncoil, ncoil != self.ncoil),
+                ("r_dist", r_dist, r_dist != self.r_dist),
+                ("p_dist", p_dist, p_dist != self.p_dist)
+            ]
             
-        updates = [
-            ("cx", cx, cx != self.cx),
-            ("cy", cy, cy != self.cy),
-            ("r", r, r != self.r),
-            #("ncoil", ncoil, ncoil != self.ncoil),
-            ("r_dist", r_dist, r_dist != self.r_dist),
-            ("p_dist", p_dist, p_dist != self.p_dist)
-        ]
-        
-        to_update = [item for item in updates if item[2]]
-
-        if to_update:
-            for name, value, _ in to_update:
-                setattr(self, name, value)
-            self.create_vector()
+            to_update = [item for item in updates if item[2]]
+    
+            if to_update:
+                for name, value, _ in to_update:
+                    setattr(self, name, value)
+                self.create_vector()
+                
+            self.ncoil = ncoil if ncoil != self.ncoil else self.ncoil
+            self.npnt = npnt if npnt != self.npnt else self.npnt
+            self.npnt_sub = npnt_sub if npnt_sub != self.npnt_sub else self.npnt_sub        
             
-        self.ncoil = ncoil if ncoil != self.ncoil else self.ncoil
-        self.npnt = npnt if npnt != self.npnt else self.npnt
-        self.npnt_sub = npnt_sub if npnt_sub != self.npnt_sub else self.npnt_sub        
-        
-        return coil_gen.create_coil_geom(self, trace)
+            return coil_gen.create_coil_geom(self, trace)
         
     def __str__(self):
         return coil_print.print_coil(self)
