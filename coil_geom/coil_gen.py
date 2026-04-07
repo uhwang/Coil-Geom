@@ -15,7 +15,7 @@ def create_coil_geom(coil, trace):
     
     if trace:
         coil_segment = list()
-    
+
     p_dist = coil.p_dist
     ncoil = coil.ncoil
     npnt = coil.npnt
