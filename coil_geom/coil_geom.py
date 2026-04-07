@@ -208,7 +208,8 @@ class EllipseCoil(CoilGeom, VectorDiagram):
         
         self.ncoil = ncoil if ncoil != self.ncoil else self.ncoil
         self.npnt = npnt if npnt != self.npnt else self.npnt
-        self.npnt_sub = npnt_sub if npnt_sub != self.npnt_sub else self.npnt_sub        
+        self.npnt_sub = npnt_sub if npnt_sub != self.npnt_sub else self.npnt_sub    
+        
     def create_geom(self, trace = False):
         return coil_gen.create_coil_geom(self, trace)
         
@@ -286,6 +287,7 @@ def optimize_vertex(self):
     if delta_found:
         ys = (yc_c + r_f) + self.delta
         a_s, b_s = get_asbs_s(ys)
+        #a_s, b_s = asbs_func(ys)
         self.a_s = a_s
         self.b_s = b_s
         self.y_s = ys
@@ -439,15 +441,15 @@ class CircleCoil(CoilGeom, VectorDiagram):
         p1 = self.P1[2:]-self.P1[0:2]
         self.t_star = np.atan2(p1[1],p1[0])
     
-    def create_geom(self, cx = 1,
-                          cy = 1,
-                          r = 1,
-                          r_dist = 1.3, 
-                          p_dist = -0.7, 
-                          ncoil = 2, 
-                          npnt = 50, 
-                          npnt_sub = 25,
-                          trace = False):
+    def set_param(self, cx = 1,
+                        cy = 1,
+                        r = 1,
+                        r_dist = 1.3, 
+                        p_dist = -0.7, 
+                        ncoil = 2, 
+                        npnt = 50, 
+                        npnt_sub = 25,
+                        trace = False):
     
             check_ncoil = [ncoil < 2, self.ncoil < 2]
             if any(check_ncoil):
@@ -475,6 +477,9 @@ class CircleCoil(CoilGeom, VectorDiagram):
             self.npnt_sub = npnt_sub if npnt_sub != self.npnt_sub else self.npnt_sub        
             
             return coil_gen.create_coil_geom(self, trace)
+
+    def create_geom(self, trace = False):
+        return coil_gen.create_coil_geom(self, trace)
         
     def __str__(self):
         return coil_print.print_coil(self)
