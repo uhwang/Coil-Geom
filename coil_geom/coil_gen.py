@@ -122,11 +122,10 @@ def create_coil_geom(coil, trace):
         # Next Coil
         sx += dist_coil
         if coil.coil_type == coil_util._coil_type_circle:
-            #start_angle = _pi2+angle_fillet2 if p_dist >= 0 \
             start_angle = _pi2+angle_fillet2 if p_dist < 0 \
-                          else angle_fillet2
-            end_angle = angle_fillet1 if p_dist >= 0 \
-                        else _pi2+angle_fillet1
+                         else angle_fillet2
+            end_angle = angle_fillet1 if p_dist < 0 else _pi2+angle_fillet1
+
             axlen = coil.r
             bxlen = coil.r
         else:
