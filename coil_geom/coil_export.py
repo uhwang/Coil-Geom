@@ -110,10 +110,6 @@ def save_ppt(coil, fname, trace=False, lcol='b', lthk=0.005, fcol='w', closed=Fa
     else:
         lc = get_color(lcol)
         x, y = coil.create_geom(trace)
-        
-        xmin, xmax = min(x), max(x)
-        ymin, ymax = min(y), max(y)
-        dev = DevicePPT(fname, x, y)
-        
+        dev = DevicePPT(fname, x, y)    
         Polyline(dev.slide, dev.x_(x), dev.y_(y), lc, lthk, fc, closed)
     dev.close()
