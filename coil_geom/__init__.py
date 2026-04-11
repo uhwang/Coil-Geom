@@ -1,4 +1,4 @@
-__version__ = "0.2.7"
+__version__ = "0.2.8"
 
 from .coil_geom import *
 from .coil_gen import *
