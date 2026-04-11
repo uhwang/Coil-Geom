@@ -100,7 +100,7 @@ class Device():
     def __init__(self, xx, yy):
         self.xmin, self.xmax = min(xx), max(xx)
         self.ymin, self.ymax = min(yy), max(yy)
-        self.maxs_range = max(self.xmax-self.xmin, self.ymax-self.ymin)
+        self.max_range = max(self.xmax-self.xmin, self.ymax-self.ymin)
         
     @abstractmethod
     def xs_(self, xs): pass
@@ -134,7 +134,7 @@ class DevicePPT(Device):
         width_inches = width_emu / 914400
         height_inches = height_emu / 914400
         min_edge = min(width_inches, height_inches)
-        self.scale = min_edge/self.maxs_range
+        self.scale = min_edge/self.max_range
         
     def xs_(self, xs): return (xs-self.xmin)*self.scale
     def ys_(self, ys): return (ys-self.ymin)*self.scale
@@ -197,7 +197,7 @@ class DeviceSVG(Device):
                       "width=\"%d\" height=\"%d\"\n"
                       "xmlns=\"http://www.w3.org/2000/svg\">\n"\
                       %(int(wid),int(hgt)))
-        self.scale = wid/self.maxs_range
+        self.scale = min(hgt,wid)/self.max_range
         self.xx = xx
         self.yy = yy
         self.xgap = xgap
