@@ -24,3 +24,15 @@ cg.save_ppt(c_es_dn, "c_es_dn.pptx")
 
 cg.save_ppt(c_ec_up, "c_ec_up.pptx")
 cg.save_ppt(c_ec_dn, "c_ec_dn.pptx")
+
+cg.save_svg(c_c_up , "c_c_up.svg" )
+cg.save_svg(c_c_dn , "c_c_dn.svg" )
+
+cg.save_svg(c_e_up , "c_e_up.svg" )
+cg.save_svg(c_e_dn , "c_e_dn.svg" )
+
+cg.save_svg(c_es_up, "c_es_up.svg")
+cg.save_svg(c_es_dn, "c_es_dn.svg")
+
+cg.save_svg(c_ec_up, "c_ec_up.svg")
+cg.save_svg(c_ec_dn, "c_ec_dn.svg")
