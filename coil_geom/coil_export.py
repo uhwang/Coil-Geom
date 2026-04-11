@@ -1,5 +1,7 @@
 '''
     04/08/2026  Export coil data to pptx
+    04/09/2026  Export coil data to SVG
+    04/11/2026  Debug Plot
 '''
 from abc import ABC, abstractmethod
     
@@ -12,10 +14,24 @@ import numpy as np
 
 if __name__ == "__main__":
     import coil_color
+    import coil_util as cu
 else:
     from . import coil_color
+    from . import coil_util as cu
+
+def get_color(c):
+    cc = coil_color.color_collection
+    
+    if c in cc:
+        c_ = cc[c]
+    else:
+        c_ = cc['k']
+        
+    return (c_[0], c_[1], c_[2])
     
 def Polyline(slide, x, y, lcol, lthk, fcol, closed):
+    lcol = get_color(lcol)
+    fcol = get_color(fcol)
 
     free_form = slide.shapes.build_freeform(Inches(x[0]), Inches(y[0]))
     free_form.add_line_segments(
@@ -49,21 +65,58 @@ def Polyline(slide, x, y, lcol, lthk, fcol, closed):
     line_shape.shadow.inherit     = False
     line_shape.shadow.blur_radius = 0
     line_shape.shadow.distance    = 0
+ 
     
+def draw_transition_ellipse(dev, co):
+    ex, ey, ts = co.c1x, co.c1y, co.t_star
+    aa, bb = co.axlen, co.bxlen
+    xt = aa*np.cos(ts)
+    yt = bb*np.sin(ts)
+    dd = np.linspace(0, 2*np.pi, 100)
+    
+    px, py = co.P[2], co.P[3]
+    xx1 = co.c1x+aa*np.cos(dd)
+    yy1 = co.c1y+bb*np.sin(dd)
+    
+    xx2 = xx1+co.r_dist
+    yy2 = yy1
+    
+    xs_c = px + co.r_fillet*np.cos(dd)
+    ys_c = py + co.r_fillet*np.sin(dd)
+    dev.polyline(xs_c, ys_c, lcol="gold", lthk=0.01)
+    
+    if co.coil_type == cu._coil_type_ellipse_curvature or \
+       co.coil_type == cu._coil_type_ellipse_shape:
+        xx3 = co.xc_s+co.a_s*np.cos(dd)
+        yy3 = co.yc_s+co.b_s*np.sin(dd)
+        dev.polyline(xx3, yy3, lcol="blueviolet", lthk=0.01)
+
+    p1x, p1y = ex+xt, ey+yt
+    p2x, p2y = px-(ex+xt-px), ey+yt
+    dev.polyline([px, p1x], [py, p1y], lcol="cadetblue", lthk=0.01)
+    dev.polyline([px, p2x], [py, p2y], lcol="cadetblue", lthk=0.01)
+        
 class Device():
     def __init__(self, xx, yy):
         self.xmin, self.xmax = min(xx), max(xx)
         self.ymin, self.ymax = min(yy), max(yy)
-        self.max_range = max(self.xmax-self.xmin, self.ymax-self.ymin)
+        self.maxs_range = max(self.xmax-self.xmin, self.ymax-self.ymin)
         
     @abstractmethod
-    def x_(self, xs): pass
+    def xs_(self, xs): pass
+    @abstractmethod
+    def x_(self, x): pass
     
     @abstractmethod
-    def y_(self, xs): pass
-    
+    def ys_(self, ys): pass
+    @abstractmethod
+    def y_(self, y): pass
+
     @abstractmethod
     def close(self): pass
+    
+    @abstractmethod
+    def polyline(self, xs, ys, lcol, lthk): pass
     
 class DevicePPT(Device):
     def __init__(self, fname, xx, yy):
@@ -81,31 +134,25 @@ class DevicePPT(Device):
         width_inches = width_emu / 914400
         height_inches = height_emu / 914400
         min_edge = min(width_inches, height_inches)
-        self.scale = min_edge/self.max_range
+        self.scale = min_edge/self.maxs_range
         
-    def x_(self, xs): return (xs-self.xmin)*self.scale
-    def y_(self, ys): return (ys-self.ymin)*self.scale
+    def xs_(self, xs): return (xs-self.xmin)*self.scale
+    def ys_(self, ys): return (ys-self.ymin)*self.scale
+    
+    def x_(self, x): return (x-self.xmin)*self.scale
+    def y_(self, y): return (y-self.ymin)*self.scale
+    
+    def polyline(self, xs, ys, lcol, lthk):
+        Polyline(self.slide, self.xs_(xs), self.ys_(ys), lcol, lthk, 'w', False)
     
     def close(self):
         self.ppt.save(self.fname)
      
-def get_color(c):
-    cc = coil_color.color_collection
-    
-    if c in cc:
-        c_ = cc[c]
-    else:
-        c_ = cc['k']
-        
-    return (c_[0], c_[1], c_[2])
-    
-def save_ppt(coil, fname, trace=False, lcol='b', lthk=0.005):
-    fc = get_color('w')
-    
+
+def save_ppt(coil, fname, trace=False, lcol='b', lthk=0.005, debug=False):
+    fc = 'w'
     if trace:
-        c1 = get_color('r')
-        c2 = get_color('g')
-        c3 = get_color('b')
+        c1, c2, c3 = 'r', 'g', 'b'
         x, y, seg = coil.create_geom(trace)
         dev = DevicePPT(fname, x, y)
         
@@ -113,15 +160,18 @@ def save_ppt(coil, fname, trace=False, lcol='b', lthk=0.005):
         for i,s in enumerate(seg):
             ii=i+1
             if ii%2 == 0:
-                Polyline(dev.slide, dev.x_(s[0]), dev.y_(s[1]), c2, lthk, fc, False)
+                Polyline(dev.slide, dev.xs_(s[0]), dev.ys_(s[1]), c2, lthk, fc, False)
             else:
-                Polyline(dev.slide, dev.x_(s[0]), dev.y_(s[1]), c1 if bit else c3, lthk, fc, False)
+                Polyline(dev.slide, dev.xs_(s[0]), dev.ys_(s[1]), c1 if bit else c3, lthk, fc, False)
                 bit = not bit
     else:
-        lc = get_color(lcol)
         x, y = coil.create_geom(trace)
         dev = DevicePPT(fname, x, y)
-        Polyline(dev.slide, dev.x_(x), dev.y_(y), lc, lthk, fc, False)
+        Polyline(dev.slide, dev.xs_(x), dev.ys_(y), lcol, lthk, fc, False)
+        
+    if debug:
+        draw_transition_ellipse(dev, coil)
+        
     dev.close()
     
 '''
@@ -141,12 +191,13 @@ _line_to_cmd = "L"
 class DeviceSVG(Device):
     def __init__(self, fname, xx, yy, hgt=400, ar=1.33, xgap=3, ygap=3):
         super().__init__(xx, yy)
+        wid = int(hgt*ar)
         self.fp = open(fname, "wt")
         self.fp.write("<svg version=\"1.1\"\n"\
                       "width=\"%d\" height=\"%d\"\n"
                       "xmlns=\"http://www.w3.org/2000/svg\">\n"\
-                      %(int(hgt*ar),int(hgt)))
-        self.scale = hgt/self.max_range
+                      %(int(wid),int(hgt)))
+        self.scale = wid/self.maxs_range
         self.xx = xx
         self.yy = yy
         self.xgap = xgap
@@ -164,8 +215,8 @@ class DeviceSVG(Device):
                       1 if lt < 0.001 else lt))
                       
     def create_pnt_list(self, xx, yy):
-        xs = self.x_(xx)
-        ys = self.y_(yy)
+        xs = self.xs_(xx)
+        ys = self.ys_(yy)
         
         for i, (x1, y1) in enumerate(zip(xs, ys)):
             self.fp.write("%3.3f %3.3f, "%(x1, y1))
@@ -173,14 +224,17 @@ class DeviceSVG(Device):
                 self.fp.write(_next_line)
         self.fp.write("\"\n")      
         
-    def x_(self, xs): return self.xgap+(xs-self.xmin)*self.scale
-    def y_(self, ys): return self.ygap+(ys-self.ymin)*self.scale
+    def xs_(self, xs): return self.xgap+(xs-self.xmin)*self.scale
+    def ys_(self, ys): return self.ygap+(ys-self.ymin)*self.scale
+
+    def x_(self, x): return self.xgap+(x-self.xmin)*self.scale
+    def y_(self, y): return self.ygap+(y-self.ymin)*self.scale
     
     def close(self):
         self.fp.write("</svg>")
         self.fp.close()     
 
-def save_svg(coil, fname, trace=False, lcol='b', lthk=0.005):
+def save_svg(coil, fname, trace=False, lcol='b', lthk=0.005, debug=False):
     
     if trace:
         c1, c2, c3 = 'r', 'g', 'b'
@@ -199,4 +253,8 @@ def save_svg(coil, fname, trace=False, lcol='b', lthk=0.005):
         x, y = coil.create_geom(trace)
         dev = DeviceSVG(fname, x, y)
         dev.polyline(x, y, lcol, lthk)
+        
+    if debug:
+        draw_transition_ellipse(dev, coil)
+        
     dev.close()        
