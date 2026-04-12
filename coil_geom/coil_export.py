@@ -104,16 +104,16 @@ class Device():
         self.max_range = max(self.xmax-self.xmin, self.ymax-self.ymin)
         
     @abstractmethod
-    def xs_(self, xs): pass
+    def xs_(self, xx): pass
    
     @abstractmethod
-    def ys_(self, ys): pass
+    def ys_(self, yy): pass
 
     @abstractmethod
     def close(self): pass
     
     @abstractmethod
-    def polyline(self, xs, ys, lcol, lthk): pass
+    def polyline(self, xx, yy, lcol, lthk): pass
     
 class DevicePPT(Device):
     def __init__(self, fname, xx, yy):
@@ -133,11 +133,11 @@ class DevicePPT(Device):
         min_edge = min(width_inches, height_inches)
         self.scale = min_edge/self.max_range
         
-    def xs_(self, xs): return (xs-self.xmin)*self.scale
-    def ys_(self, ys): return (ys-self.ymin)*self.scale
+    def xs_(self, xx): return (xx-self.xmin)*self.scale
+    def ys_(self, yy): return (yy-self.ymin)*self.scale
     
-    def polyline(self, xs, ys, lcol, lthk):
-        Polyline(self.slide, self.xs_(xs), self.ys_(ys), lcol, lthk, 'w', False)
+    def polyline(self, xx, yy, lcol, lthk):
+        Polyline(self.slide, self.xs_(xx), self.ys_(yy), lcol, lthk, 'w', False)
     
     def close(self):
         self.ppt.save(self.fname)
@@ -147,8 +147,8 @@ def save_ppt(coil, fname, trace=False, lcol='b', lthk=0.01, debug=False):
     fc = 'w'
     if trace:
         c1, c2, c3 = 'r', 'g', 'b'
-        x, y, seg = coil.create_geom(trace)
-        dev = DevicePPT(fname, x, y)
+        xx, yy, seg = coil.create_geom(trace)
+        dev = DevicePPT(fname, xx, yy)
         
         bit=True
         for i,s in enumerate(seg):
@@ -159,9 +159,9 @@ def save_ppt(coil, fname, trace=False, lcol='b', lthk=0.01, debug=False):
                 Polyline(dev.slide, dev.xs_(s[0]), dev.ys_(s[1]), c1 if bit else c3, lthk, fc, False)
                 bit = not bit
     else:
-        x, y = coil.create_geom(trace)
-        dev = DevicePPT(fname, x, y)
-        Polyline(dev.slide, dev.xs_(x), dev.ys_(y), lcol, lthk, fc, False)
+        xx, yy = coil.create_geom(trace)
+        dev = DevicePPT(fname, xx, yy)
+        Polyline(dev.slide, dev.xs_(xx), dev.ys_(yy), lcol, lthk, fc, False)
         
     if debug:
         draw_transition_ellipse(dev, coil)
@@ -209,14 +209,16 @@ class DeviceSVG(Device):
                       1 if lt < 0.001 else lt))
                       
     def create_pnt_list(self, xx, yy):
-        for i, (x1, y1) in enumerate(zip(xx, yy)):
+        xs = self.xs_(xx)
+        ys = self.ys_(yy)
+        for i, (x1, y1) in enumerate(zip(xs, ys)):
             self.fp.write("%3.3f %3.3f, "%(x1, y1))
             if (i+1)%_points_per_line == 0:
                 self.fp.write(_next_line)
         self.fp.write("\"\n")      
         
-    def xs_(self, xs): return self.xgap+(xs-self.xmin)*self.scale
-    def ys_(self, ys): return self.ygap+(ys-self.ymin)*self.scale
+    def xs_(self, xx): return self.xgap+(xx-self.xmin)*self.scale
+    def ys_(self, yy): return self.ygap+(yy-self.ymin)*self.scale
     
     def close(self):
         self.fp.write("</svg>")
@@ -227,20 +229,20 @@ def save_svg(coil, fname, trace=False, lcol='b', lthk=0.01, debug=False):
     if trace:
         c1, c2, c3 = 'r', 'g', 'b'
         xx, yy, seg = coil.create_geom(trace)
-        dev = DeviceSVG(fname, x, y)
+        dev = DeviceSVG(fname, xx, yy)
         
         bit=True
         for i,s in enumerate(seg):
             ii=i+1
             if ii%2 == 0:
-                dev.polyline(dev.xs_(s[0]), dev.ys_(s[1]), c2, lthk)
+                dev.polyline(s[0], s[1], c2, lthk)
             else:
-                dev.polyline(dev.xs_(s[0]), dev.ys_(s[1]), c1 if bit else c3, lthk)
+                dev.polyline(s[0], s[1], c1 if bit else c3, lthk)
                 bit = not bit
     else:
         xx, yy = coil.create_geom(trace)
         dev = DeviceSVG(fname, xx, yy)
-        dev.polyline(dev.xs_(xx), dev.ys_(yy), lcol, lthk)
+        dev.polyline(xx, yy, lcol, lthk)
         
     if debug:
         draw_transition_ellipse(dev, coil)
@@ -324,7 +326,9 @@ class DevicePDF(Device):
         self.obj_length += len(obj_buffer)
         self.fp = open(fname, "wb")
         
-    def polyline(self, xs, ys, lcol, lthk, fcol=None, closed=False):
+    def polyline(self, xx, yy, lcol, lthk, fcol=None, closed=False):
+        xs = self.xs_(xx)
+        ys = self.ys_(yy)
         lc = color_normalize(get_color(lcol)) if lcol else lcol
         fc = color_normalize(get_color(fcol)) if fcol else fcol
         lt = lthk*self.scale*_points_inch
@@ -358,8 +362,8 @@ class DevicePDF(Device):
         self.obj_list.append(obj_buffer)
         self.obj_length += len(obj_buffer)
         
-    def polygon(self, xs, ys, lcol, lthk, fcol):
-        self.polyline(x,y,lcol,lthk,fcol,True)
+    def polygon(self, xx, yy, lcol, lthk, fcol):
+        self.polyline(xx,yy,lcol,lthk,fcol,True)
     
     #---------------------------------------------------------------
     # Currently, the total number of ojb is 4. 
@@ -432,28 +436,28 @@ class DevicePDF(Device):
         self.fp.write(bytes("%%EOF",'utf-8'))
         self.fp.close()
 
-    def xs_(self, xs): return (self.xgap+(xs-self.xmin)*self.scale)*_points_inch
-    def ys_(self, ys): return (self.ygap+(ys-self.ymin)*self.scale)*_points_inch
+    def xs_(self, xx): return (self.xgap+(xx-self.xmin)*self.scale)*_points_inch
+    def ys_(self, yy): return (self.ygap+(yy-self.ymin)*self.scale)*_points_inch
           
 def save_pdf(coil, fname, trace=False, lcol='b', lthk=0.01, debug=False):
     
     if trace:
         c1, c2, c3 = 'r', 'g', 'b'
-        xs, ys, seg = coil.create_geom(trace)
-        dev = DevicePDF(fname, xs, ys)
+        xx, yy, seg = coil.create_geom(trace)
+        dev = DevicePDF(fname, xx, yy)
         
         bit=True
         for i,s in enumerate(seg):
             ii=i+1
             if ii%2 == 0:
-                dev.polyline(dev.xs_(s[0]), dev.ys_(s[1]), c2, lthk)
+                dev.polyline(s[0], s[1], c2, lthk)
             else:
-                dev.polyline(dev.xs_(s[0]), dev.ys_(s[1]), c1 if bit else c3, lthk)
+                dev.polyline(s[0], s[1], c1 if bit else c3, lthk)
                 bit = not bit
     else:
-        xs, ys = coil.create_geom(trace)
-        dev = DevicePDF(fname, xs, ys)
-        dev.polyline(dev.xs_(xs), dev.ys_(ys), lcol, lthk)
+        xx, yy = coil.create_geom(trace)
+        dev = DevicePDF(fname, xx, yy)
+        dev.polyline(xx, yy, lcol, lthk)
         
     if debug:
         draw_transition_ellipse(dev, coil)
