@@ -2,6 +2,7 @@
     04/08/2026  Export coil data to pptx
     04/09/2026  Export coil data to SVG
     04/11/2026  Debug Plot
+    04/12/2026  Export coil data to PDF
 '''
 from abc import ABC, abstractmethod
     
@@ -78,7 +79,7 @@ def draw_transition_ellipse(dev, co):
     xx1 = co.c1x+aa*np.cos(dd)
     yy1 = co.c1y+bb*np.sin(dd)
     
-    xx2 = xx1+co.r_dist
+    xx2 = xx1+co.p_dist
     yy2 = yy1
     
     xs_c = px + co.r_fillet*np.cos(dd)
@@ -104,13 +105,9 @@ class Device():
         
     @abstractmethod
     def xs_(self, xs): pass
-    @abstractmethod
-    def x_(self, x): pass
-    
+   
     @abstractmethod
     def ys_(self, ys): pass
-    @abstractmethod
-    def y_(self, y): pass
 
     @abstractmethod
     def close(self): pass
@@ -139,9 +136,6 @@ class DevicePPT(Device):
     def xs_(self, xs): return (xs-self.xmin)*self.scale
     def ys_(self, ys): return (ys-self.ymin)*self.scale
     
-    def x_(self, x): return (x-self.xmin)*self.scale
-    def y_(self, y): return (y-self.ymin)*self.scale
-    
     def polyline(self, xs, ys, lcol, lthk):
         Polyline(self.slide, self.xs_(xs), self.ys_(ys), lcol, lthk, 'w', False)
     
@@ -149,7 +143,7 @@ class DevicePPT(Device):
         self.ppt.save(self.fname)
      
 
-def save_ppt(coil, fname, trace=False, lcol='b', lthk=0.005, debug=False):
+def save_ppt(coil, fname, trace=False, lcol='b', lthk=0.01, debug=False):
     fc = 'w'
     if trace:
         c1, c2, c3 = 'r', 'g', 'b'
@@ -189,7 +183,7 @@ _move_to_cmd = 'M'
 _line_to_cmd = "L"
                
 class DeviceSVG(Device):
-    def __init__(self, fname, xx, yy, hgt=400, ar=1.33, xgap=3, ygap=3):
+    def __init__(self, fname, xx, yy, hgt=300, ar=1.33, xgap=3, ygap=3):
         super().__init__(xx, yy)
         wid = int(hgt*ar)
         self.fp = open(fname, "wt")
@@ -215,10 +209,7 @@ class DeviceSVG(Device):
                       1 if lt < 0.001 else lt))
                       
     def create_pnt_list(self, xx, yy):
-        xs = self.xs_(xx)
-        ys = self.ys_(yy)
-        
-        for i, (x1, y1) in enumerate(zip(xs, ys)):
+        for i, (x1, y1) in enumerate(zip(xx, yy)):
             self.fp.write("%3.3f %3.3f, "%(x1, y1))
             if (i+1)%_points_per_line == 0:
                 self.fp.write(_next_line)
@@ -226,35 +217,246 @@ class DeviceSVG(Device):
         
     def xs_(self, xs): return self.xgap+(xs-self.xmin)*self.scale
     def ys_(self, ys): return self.ygap+(ys-self.ymin)*self.scale
-
-    def x_(self, x): return self.xgap+(x-self.xmin)*self.scale
-    def y_(self, y): return self.ygap+(y-self.ymin)*self.scale
     
     def close(self):
         self.fp.write("</svg>")
         self.fp.close()     
 
-def save_svg(coil, fname, trace=False, lcol='b', lthk=0.005, debug=False):
+def save_svg(coil, fname, trace=False, lcol='b', lthk=0.01, debug=False):
     
     if trace:
         c1, c2, c3 = 'r', 'g', 'b'
-        x, y, seg = coil.create_geom(trace)
+        xx, yy, seg = coil.create_geom(trace)
         dev = DeviceSVG(fname, x, y)
         
         bit=True
         for i,s in enumerate(seg):
             ii=i+1
             if ii%2 == 0:
-                dev.polyline(s[0], s[1], c2, lthk)
+                dev.polyline(dev.xs_(s[0]), dev.ys_(s[1]), c2, lthk)
             else:
-                dev.polyline(s[0], s[1], c1 if bit else c3, lthk)
+                dev.polyline(dev.xs_(s[0]), dev.ys_(s[1]), c1 if bit else c3, lthk)
                 bit = not bit
     else:
-        x, y = coil.create_geom(trace)
-        dev = DeviceSVG(fname, x, y)
-        dev.polyline(x, y, lcol, lthk)
+        xx, yy = coil.create_geom(trace)
+        dev = DeviceSVG(fname, xx, yy)
+        dev.polyline(dev.xs_(xx), dev.ys_(yy), lcol, lthk)
         
     if debug:
         draw_transition_ellipse(dev, coil)
         
     dev.close()        
+    
+'''
+    PDF Driver
+'''    
+
+import zlib
+import math
+
+_pdf_header = "%PDF-1.7\n"
+_points_inch = 72
+_default_nobj = 3
+
+_translate = lambda x,y : "1.0000 0.0000 "\
+                          "0.0000 1.0000 "\
+                          "%3.4f %3.4f cm\n"%(x,y)
+                          
+_rotate = lambda phi : "%3.4f %3.4f "\
+                       "%3.4f %3.4f "\
+                       "0.0000 0.0000 cm\n"%(
+                        np.cos(phi), np.sin(phi),
+                       -np.sin(phi), np.cos(phi)
+                       )
+                       
+_y_inverse = lambda hgt : "1.0000 0.0000 "\
+                          "0.0000 -1.0000 "\
+                          "0.0000 %3.4f cm\n"%(
+                          hgt
+                          )
+
+_x_inverse = lambda wid : "-1.0000 0.0000 "\
+                          "0.0000 1.0000 "\
+                          "%3.4f 0.0000 cm\n"%(
+                          wid
+                          )
+def color_normalize(c):
+    return (c[0]/255., c[1]/255., c[2]/255.)
+    
+class DevicePDF(Device):
+    def __init__(
+            self, 
+            fname, xx, yy, size=(8.5,11.0), xgap=0.5, ygap=0.5,
+            layout_dir='p',
+            compression=False):
+            
+        super().__init__(xx, yy)
+        wid = (size[0]-2*xgap)
+        hgt = (size[1]-2*ygap)
+        self.scale = min(hgt,wid)/self.max_range
+        self.xgap = xgap
+        self.ygap = ygap
+        
+        self.obj_list = []
+        self.file_size = 0
+        self.layout_dir = layout_dir
+        self.compression = compression
+        self.obj_length = 0
+        self.cur_obj_index = 0
+        self.rotate = 0
+        self.obj_length = 0
+        self._sx = 0
+        self._sy = 0
+        self._ex = size[0]*_points_inch
+        self._ey = size[1]*_points_inch
+
+        if layout_dir.upper == 'P':
+            self.rotate = 90
+            obj_buffer_list = [ _translate(self._ex, 0), 
+                                _rotate(util.deg_to_rad(90)),
+                                _y_inverse(self._ex)]
+        else:
+            obj_buffer_list = [ _y_inverse(self._ey)]
+
+        obj_buffer = ''.join(obj_buffer_list) if self.compression else\
+                     bytes(''.join(obj_buffer_list), 'utf-8')
+        self.obj_list.append(obj_buffer)
+        self.obj_length += len(obj_buffer)
+        self.fp = open(fname, "wb")
+        
+    def polyline(self, xs, ys, lcol, lthk, fcol=None, closed=False):
+        lc = color_normalize(get_color(lcol)) if lcol else lcol
+        fc = color_normalize(get_color(fcol)) if fcol else fcol
+        lt = lthk*self.scale*_points_inch
+        
+        obj_buffer_list = ["q\n"] #saveDC
+        
+        if lcol:
+            obj_buffer_list.append("%1.4f %1.4f %1.4f RG\n"%(lc[0], lc[1], lc[2]))
+            obj_buffer_list.append("%3.3f w\n"%lt)
+        
+        if fcol:
+            obj_buffer_list.append("%1.4f %1.4f %1.4f rg\n"%(fc[0], fc[1], fc[2]))
+            
+        obj_buffer_list.append("%3.3f %3.3f m\n"%(xs[0],ys[0]))
+        
+        for x1, y1 in zip(xs[1:],ys[1:]):
+            obj_buffer_list.append("%3.3f %3.3f l\n"%(x1,y1))
+        
+        if closed:
+            if lcol and fcol:
+                obj_buffer_list.append("b\nQ\n") # close, fill, stroke and restore DC
+            elif not isinstance(lcol, color.Color) and fcol:
+                obj_buffer_list.append("f\nQ\n") # close, fill, and restore DC
+            else:
+                obj_buffer_list.append("s\nQ\n") # close, stroke and restore DC
+        else:
+            obj_buffer_list.append("S\nQ\n")     # stroke and restoreDC
+            
+        obj_buffer = ''.join(obj_buffer_list) if self.compression else\
+                     bytes(''.join(obj_buffer_list), 'utf-8')
+        self.obj_list.append(obj_buffer)
+        self.obj_length += len(obj_buffer)
+        
+    def polygon(self, xs, ys, lcol, lthk, fcol):
+        self.polyline(x,y,lcol,lthk,fcol,True)
+    
+    #---------------------------------------------------------------
+    # Currently, the total number of ojb is 4. 
+    # The 4th obj is the ploting commands. 
+    #---------------------------------------------------------------
+    
+    def close(self):
+
+        obj1 = "1 0 obj\n<< /Type /Catalog /Pages 2 0 R>>\nendobj\n"
+        obj2 = "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1>>\nendobj\n"
+        obj3 = "3 0 obj\n<<\n/Type /Page\n/Parent 2 0 R\n"\
+                "/MediaBox [%3.4f %3.4f %3.4f %3.4f]\n"\
+                "/Rotate %d\n"\
+                "/Contents 4 0 R\n>>\nendobj\n"%\
+                (self._sx, self._sy, self._ex, self._ey, self.rotate)
+        
+        # Write PDF Header
+        self.file_size = 0
+        self.fp.write(bytes(_pdf_header,'utf-8'))
+        self.file_size += len(_pdf_header)
+        obj_pos = [self.file_size]   
+        
+        # Write Obj 1
+        self.fp.write(bytes(obj1,'utf-8'))
+        self.file_size += len(obj1)
+        obj_pos.append(self.file_size)
+        
+        # Write Obj 2
+        self.fp.write(bytes(obj2,'utf-8'))
+        self.file_size += len(obj2)
+        obj_pos.append(self.file_size)
+        
+        # Write Obj 3
+        self.fp.write(bytes(obj3,'utf-8'))
+        self.file_size += len(obj3)
+        obj_pos.append(self.file_size)        
+
+        # Write Obj 4
+        if self.compression:
+            zip_obj = zlib.compress(bytes(''.join(self.obj_list), 'utf-8'))
+            self.obj_length = len(zip_obj)
+        
+        obj4 = bytes("4 0 obj\n<</Length %d %s>>\nstream\n"%(
+                     self.obj_length,
+                     "/Filter [/FlateDecode]" if self.compression else ""), 'utf-8')
+        self.file_size += len(obj4)
+        self.fp.write(obj4)
+
+        if self.compression:
+            self.fp.write(zip_obj)
+        else:
+            for o in self.obj_list:
+                self.fp.write(o)
+        self.file_size += self.obj_length
+        
+        obj4 = bytes("\nendstream\nendobj\n",'utf-8')
+        self.file_size += len(obj4)
+        self.fp.write(obj4)   
+        obj_pos.append(self.file_size)
+        
+        start_xref = self.file_size
+        nobj = len(obj_pos)+1
+        self.fp.write(bytes("xref\n0 %d\n0000000000 65535 f\n"%nobj,'utf-8'))
+        for v in obj_pos:
+            self.fp.write(bytes("%010d 00000 n\n"%(v),'utf-8'))
+            
+        total_nobj = _default_nobj+1
+        self.fp.write(bytes("trailer<</Size %d/Root 1 0 R>>\n"%total_nobj,'utf-8'))
+        self.fp.write(bytes("startxref\n%d\n"%start_xref,'utf-8'))
+        self.fp.write(bytes("%%EOF",'utf-8'))
+        self.fp.close()
+
+    def xs_(self, xs): return (self.xgap+(xs-self.xmin)*self.scale)*_points_inch
+    def ys_(self, ys): return (self.ygap+(ys-self.ymin)*self.scale)*_points_inch
+          
+def save_pdf(coil, fname, trace=False, lcol='b', lthk=0.01, debug=False):
+    
+    if trace:
+        c1, c2, c3 = 'r', 'g', 'b'
+        xs, ys, seg = coil.create_geom(trace)
+        dev = DevicePDF(fname, xs, ys)
+        
+        bit=True
+        for i,s in enumerate(seg):
+            ii=i+1
+            if ii%2 == 0:
+                dev.polyline(dev.xs_(s[0]), dev.ys_(s[1]), c2, lthk)
+            else:
+                dev.polyline(dev.xs_(s[0]), dev.ys_(s[1]), c1 if bit else c3, lthk)
+                bit = not bit
+    else:
+        xs, ys = coil.create_geom(trace)
+        dev = DevicePDF(fname, xs, ys)
+        dev.polyline(dev.xs_(xs), dev.ys_(ys), lcol, lthk)
+        
+    if debug:
+        draw_transition_ellipse(dev, coil)
+        
+    dev.close()                
+
