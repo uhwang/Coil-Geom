@@ -143,11 +143,11 @@ class DevicePPT(Device):
         self.ppt.save(self.fname)
      
 
-def save_ppt(coil, fname, trace=False, lcol='b', lthk=0.01, debug=False):
+def save_ppt(coil, fname, trace=False, lcol='b', lthk=0.01, debug=False, lead_l=0, lead_r=0):
     fc = 'w'
     if trace:
         c1, c2, c3 = 'r', 'g', 'b'
-        xx, yy, seg = coil.create_geom(trace)
+        xx, yy, seg = coil.create_geom(trace, lead_l, lead_r)
         dev = DevicePPT(fname, xx, yy)
         
         bit=True
@@ -159,7 +159,7 @@ def save_ppt(coil, fname, trace=False, lcol='b', lthk=0.01, debug=False):
                 Polyline(dev.slide, dev.xs_(s[0]), dev.ys_(s[1]), c1 if bit else c3, lthk, fc, False)
                 bit = not bit
     else:
-        xx, yy = coil.create_geom(trace)
+        xx, yy = coil.create_geom(trace, lead_l, lead_r)
         dev = DevicePPT(fname, xx, yy)
         Polyline(dev.slide, dev.xs_(xx), dev.ys_(yy), lcol, lthk, fc, False)
         
@@ -224,11 +224,11 @@ class DeviceSVG(Device):
         self.fp.write("</svg>")
         self.fp.close()     
 
-def save_svg(coil, fname, trace=False, lcol='b', lthk=0.01, debug=False):
+def save_svg(coil, fname, trace=False, lcol='b', lthk=0.01, debug=False, lead_l=0, lead_r=0):
     
     if trace:
         c1, c2, c3 = 'r', 'g', 'b'
-        xx, yy, seg = coil.create_geom(trace)
+        xx, yy, seg = coil.create_geom(trace, lead_l, lead_r)
         dev = DeviceSVG(fname, xx, yy)
         
         bit=True
@@ -240,7 +240,7 @@ def save_svg(coil, fname, trace=False, lcol='b', lthk=0.01, debug=False):
                 dev.polyline(s[0], s[1], c1 if bit else c3, lthk)
                 bit = not bit
     else:
-        xx, yy = coil.create_geom(trace)
+        xx, yy = coil.create_geom(trace, lead_l, lead_r)
         dev = DeviceSVG(fname, xx, yy)
         dev.polyline(xx, yy, lcol, lthk)
         
@@ -439,11 +439,11 @@ class DevicePDF(Device):
     def xs_(self, xx): return (self.xgap+(xx-self.xmin)*self.scale)*_points_inch
     def ys_(self, yy): return (self.ygap+(yy-self.ymin)*self.scale)*_points_inch
           
-def save_pdf(coil, fname, trace=False, lcol='b', lthk=0.01, debug=False):
+def save_pdf(coil, fname, trace=False, lcol='b', lthk=0.01, debug=False, lead_l=0, lead_r=0):
     
     if trace:
         c1, c2, c3 = 'r', 'g', 'b'
-        xx, yy, seg = coil.create_geom(trace)
+        xx, yy, seg = coil.create_geom(trace, lead_l, lead_r)
         dev = DevicePDF(fname, xx, yy)
         
         bit=True
@@ -455,7 +455,7 @@ def save_pdf(coil, fname, trace=False, lcol='b', lthk=0.01, debug=False):
                 dev.polyline(s[0], s[1], c1 if bit else c3, lthk)
                 bit = not bit
     else:
-        xx, yy = coil.create_geom(trace)
+        xx, yy = coil.create_geom(trace, lead_l, lead_r)
         dev = DevicePDF(fname, xx, yy)
         dev.polyline(xx, yy, lcol, lthk)
         
