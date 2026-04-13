@@ -210,8 +210,8 @@ class EllipseCoil(CoilGeom, VectorDiagram):
         self.npnt = npnt if npnt != self.npnt else self.npnt
         self.npnt_sub = npnt_sub if npnt_sub != self.npnt_sub else self.npnt_sub    
         
-    def create_geom(self, trace = False):
-        return coil_gen.create_coil_geom(self, trace)
+    def create_geom(self, trace = False, lead_l=0, lead_r=0):
+        return coil_gen.create_coil_geom(self, trace, lead_l, lead_r)
         
     def __str__(self):
         return coil_print.print_coil(self)
@@ -478,8 +478,8 @@ class CircleCoil(CoilGeom, VectorDiagram):
             
             return coil_gen.create_coil_geom(self, trace)
 
-    def create_geom(self, trace = False):
-        return coil_gen.create_coil_geom(self, trace)
+    def create_geom(self, trace = False, lead_l=0, lead_r=0):
+        return coil_gen.create_coil_geom(self, trace, lead_l, lead_r)
         
     def __str__(self):
         return coil_print.print_coil(self)
