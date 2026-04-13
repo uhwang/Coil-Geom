@@ -9,7 +9,7 @@ if __name__ == "__main__":
 else:
     from . import coil_util
 
-def create_coil_geom(coil, trace):
+def create_coil_geom(coil, trace, lead_l, lead_r):
     _pi2 = np.pi*2
     _pi  = np.pi
     
@@ -54,6 +54,10 @@ def create_coil_geom(coil, trace):
     
     ncoil_sub = ncoil-1
     total_pnt = npnt*ncoil+npnt_sub*ncoil_sub
+    
+    if lead_l > 0: total_pnt += 1
+    if lead_r > 0: total_pnt += 1
+    
     xx = np.zeros(total_pnt) 
     yy = np.zeros(total_pnt)
     
@@ -75,7 +79,15 @@ def create_coil_geom(coil, trace):
         #end_angle = t_star1-_pi2 if p_dist >= 0 else t_star1
         end_angle = t_star1-_pi2 if p_dist < 0 else t_star1
         
-    prv_index = 0
+    if lead_l > 0:
+        xx[0] = sx+axlen*np.cos(_pi)-lead_l
+        yy[0] = sy
+        if trace:
+            coil_segment.append((xx[0], yy[0]))
+        prv_index = 1
+    else:
+        prv_index = 0
+        
     cur_index = create_segment(sx, 
                                sy, 
                                axlen, 
@@ -210,7 +222,13 @@ def create_coil_geom(coil, trace):
         if trace:
             coil_segment.append((xx[prv_index:cur_index], 
                                  yy[prv_index:cur_index]))
-                              
+
+    if lead_r > 0:
+        xx[-1] = xx[-2]+lead_r
+        yy[-1] = yy[-2]
+        if trace:
+            coil_segment.append((xx[-1],yy[-1]))
+                                 
     return (xx, yy, coil_segment) if trace else (xx, yy)
                  
                  
