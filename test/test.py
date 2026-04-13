@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import coil_geom as cg
 
 c_c_up = cg.CircleCoil(p_dist=0.7, ncoil=5)
@@ -18,7 +19,7 @@ cg.save_ppt(c_e_up ,  "c_e_up.pptx" )
 cg.save_ppt(c_e_dn ,  "c_e_dn.pptx" )
 cg.save_ppt(c_es_up, "c_es_up.pptx", debug=True)
 cg.save_ppt(c_es_dn, "c_es_dn.pptx", debug=True)
-cg.save_ppt(c_ec_up, "c_ec_up.pptx")
+cg.save_ppt(c_ec_up, "c_ec_up.pptx", lead_l=2, lead_r=2)
 cg.save_ppt(c_ec_dn, "c_ec_dn.pptx")
 
 cg.save_svg(c_c_up ,  "c_c_up.svg" )
@@ -27,7 +28,7 @@ cg.save_svg(c_e_up ,  "c_e_up.svg" )
 cg.save_svg(c_e_dn ,  "c_e_dn.svg" )
 cg.save_svg(c_es_up, "c_es_up.svg", debug=True)
 cg.save_svg(c_es_dn, "c_es_dn.svg", debug=True)
-cg.save_svg(c_ec_up, "c_ec_up.svg")
+cg.save_svg(c_ec_up, "c_ec_up.svg", lead_l=2, lead_r=2)
 cg.save_svg(c_ec_dn, "c_ec_dn.svg")
 
 cg.save_pdf(c_c_up ,  "c_c_up.pdf" )
