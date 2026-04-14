@@ -514,7 +514,7 @@ pip install coil-geom
   <img src="images/coil-diag-03.jpg">
   <img src="images/coil-diag-04.jpg">
   <img src="images/coil-diag-05.jpg">
-  <img src="images/coil-diag-06.jpg">  
+  <img src="images/coil-matplotlib.jpg">  
 </p>
 
 ```Python
