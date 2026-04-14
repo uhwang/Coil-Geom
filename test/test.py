@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import coil_geom as cg
 
 c_c_up = cg.CircleCoil(p_dist=0.7, ncoil=5)
