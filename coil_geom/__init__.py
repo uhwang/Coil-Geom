@@ -6,7 +6,7 @@
     Ver. 0.2.10  Coord conversion fixed
 '''
 
-__version__ = "0.2.10"
+__version__ = "0.2.13"
 
 from .coil_geom import *
 from .coil_gen import *
