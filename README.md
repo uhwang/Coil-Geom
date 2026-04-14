@@ -521,16 +521,25 @@ pip install coil-geom
 import matplotlib.pyplot as plt
 import coil_geom as cg
 
-coil = cg.CoilGeom()
-xc, yc = coil.circle_coil()
-xe, ye = coil.ellipse_coil()
-xu, yu = coil.circle_coil(p_dist=-0.7)
+cc = cg.CircleCoil(ncoil=5)
+ce = cg.EllipseCoil(ncoil=5)
+ces = cg.EllipseCoilShape(ncoil=5)
+cec = cg.EllipseCoilCurvature(ncoil=5)
 
-fig, axs = plt.subplots(nrows=3, ncols=1, sharex=True, figsize=(8, 6))
+x1, y1 = cc.create_geom()
+x2, y2 = ce.create_geom()
+x3, y3 = ces.create_geom()
+x4, y4 = cec.create_geom()
+
+fig, axs = plt.subplots(nrows=4, ncols=1, sharex=True, figsize=(8, 6))
 fig.suptitle('Circle & Ellipse Coil Geometry')
-axs[0].plot(xc, yc)
-axs[1].plot(xe, ye)
-axs[2].plot(xu, yu)
-
+axs[0].plot(x1, y1)
+axs[0].set_aspect('equal')
+axs[1].plot(x2, y2)
+axs[1].set_aspect('equal')
+axs[2].plot(x3, y3)
+axs[2].set_aspect('equal')
+axs[3].plot(x4, y4)
+axs[3].set_aspect('equal')
 plt.show()
 ```
