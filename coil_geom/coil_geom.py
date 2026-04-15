@@ -270,9 +270,9 @@ def optimize_vertex(self):
     
     if self.target_mode == coil_util._optimze_curvature:
         if self.p_dist >= 0: 
-            bounds=bounds=(-self.right_bound, -self.left_bound)
+            bounds=(-self.right_bound, -self.left_bound)
         else:
-            bounds=bounds=(self.left_bound, self.right_bound)
+            bounds=(self.left_bound, self.right_bound)
         res = minimize_scalar(lambda d: obj_func(d)**2, bounds=bounds, method='bounded')
         if res.success:
             self.delta = res.x    
