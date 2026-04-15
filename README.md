@@ -531,7 +531,7 @@ x2, y2 = ce.create_geom()
 x3, y3 = ces.create_geom()
 x4, y4 = cec.create_geom()
 
-fig, axs = plt.subplots(nrows=4, ncols=1, sharex=True, figsize=(8, 6))
+fig, axs = plt.subplots(nrows=4, ncols=1, figsize=(8, 6))
 fig.suptitle('Circle & Ellipse Coil Geometry')
 axs[0].plot(x1, y1)
 axs[0].set_aspect('equal')
