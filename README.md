@@ -89,7 +89,9 @@ $$h = \sqrt{R^2 - \left(\frac{|\vec{V_4}|}{2}\right)^2}$$
 
 Vector $\vec{V_5}$ points from the endpoint of $\vec{V_4}$ toward one of the two intersection points of the primary circles.
 
-![Circular coil geometry](typst%20circle%20coil%20-%2001.svg)
+<p align="center">
+  <img src="images/coil-diag-01.jpg">
+</p>
 
 ### Finding the Tangent (Contact) Points
 
@@ -115,7 +117,7 @@ That is, $P_1$ lies on $C_1$ at a distance $r_{\text{fillet}}$ from $P$, along t
 
 $$\vec{L} = \vec{P} - \vec{V_2}, \qquad \vec{P_2} = \vec{V_2} + r_{\text{fillet}} \cdot \frac{\vec{L}}{|\vec{L}|}$$
 
-| ![](typst%20circle%20coil%20-%2002.svg) | ![](typst%20circle%20coil%20-%2003.svg) |
+| ![](images/coil-diag-02.jpg) | ![](images/coil-diag-03.jpg) |
 |:---:|:---:|
 
 ### Coil Direction and Segmentation
@@ -509,7 +511,6 @@ pip install coil-geom
 ```
 ## Mathematical Background
 <p align="center">
-  <img src="images/coil-diag-01.jpg">
   <img src="images/coil-diag-02.jpg">
   <img src="images/coil-diag-03.jpg">
   <img src="images/coil-diag-04.jpg">
