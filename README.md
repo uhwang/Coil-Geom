@@ -150,7 +150,7 @@ where $(x_{P_1}, y_{P_1})$ and $(x_{P_2}, y_{P_2})$ are the coordinates of $P_1$
 
 When the coil transitions downward (fillet center lies below the line $C_1C_2$), all arc angles increase in the **clockwise (CW)** direction — that is, the angle decreases numerically.
 
-![Downward transition arc parameterization](images/coil-diag-04.jpg)
+![Downward transition arc parameterization](images/coil-diag-05.jpg)
 
 **Segment 1** — Arc on $C_1$ ($\text{Coil}_1$):
 
@@ -176,7 +176,7 @@ The second form applies when the coil connects into the next loop.
 
 When the coil transitions upward (fillet center lies above the line $C_1C_2$), arc angles increase in the **counter-clockwise (CCW)** direction.
 
-![Upward transition arc parameterization](images/coil-diag-05.jpg)
+![Upward transition arc parameterization](images/coil-diag-04.jpg)
 
 **Segment 1** — Arc on $C_1$ ($\text{Coil}_1$):
 
