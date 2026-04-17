@@ -258,8 +258,6 @@ Normal Vector Optimization (NVO) is the superior method for practical engineerin
 
 ![Shortest distance method](shortest%20distance%20method.svg)
 
-![Ellipse coil — up/down transitions](mdd%20-%20ellipse%20-%20up%20down.svg)
-
 However, something felt missing. It is because of the curvature difference between an ellipse and a transfer circle. The curvature of the primary ellipse varies along the curve, whereas the curvature of the transfer circle is constant and much larger than that of the ellipse ($\kappa_{\text{circle}} = 4.91$, $\kappa_{\text{ellipse}} = 0.687$). At this point $G^2$ continuity breaks, and human eyes perceive the discontinuity. This phenomenon led to a more robust method.
 
 ---
