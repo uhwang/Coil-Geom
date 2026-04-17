@@ -256,7 +256,7 @@ self.t_star = res.x
 
 Normal Vector Optimization (NVO) is the superior method for practical engineering and software implementation. It bypasses the "algebraic swamp" of the 4th-degree polynomial while providing a more intuitive control variable ($y_c$) for designers. It mathematically guarantees $G^1$ continuity, making it ideal for path planning in coil winding or aerodynamic modeling.
 
-![Shortest distance method](shortest%20distance%20method.svg)
+![Shortest distance method](images/shortest%20distance%20method.svg)
 
 However, something felt missing. It is because of the curvature difference between an ellipse and a transfer circle. The curvature of the primary ellipse varies along the curve, whereas the curvature of the transfer circle is constant and much larger than that of the ellipse ($\kappa_{\text{circle}} = 4.91$, $\kappa_{\text{ellipse}} = 0.687$). At this point $G^2$ continuity breaks, and human eyes perceive the discontinuity. This phenomenon led to a more robust method.
 
