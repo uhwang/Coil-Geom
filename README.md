@@ -146,11 +146,11 @@ $$\theta_{\text{fillet},1} = \text{atan2}(y_{P_1}, x_{P_1}), \qquad \theta_{\tex
 
 where $(x_{P_1}, y_{P_1})$ and $(x_{P_2}, y_{P_2})$ are the coordinates of $P_1$ and $P_2$ relative to $P$.
 
-### Case 1: Downward Transition ($p_{\text{dist}} < 0$)
+### Case 1: Upward Transition ($p_{\text{dist}} > 0$)
 
 When the coil transitions downward (fillet center lies below the line $C_1C_2$), all arc angles increase in the **clockwise (CW)** direction — that is, the angle decreases numerically.
 
-![Downward transition arc parameterization](images/coil-diag-05.jpg)
+![Upward transition arc parameterization](images/coil-diag-05.jpg)
 
 **Segment 1** — Arc on $C_1$ ($\text{Coil}_1$):
 
@@ -172,11 +172,11 @@ $$2\pi + \theta_{\text{fillet},2} \leq \theta_3 \leq 0 \quad \text{or} \quad 2\p
 
 The second form applies when the coil connects into the next loop.
 
-### Case 2: Upward Transition ($p_{\text{dist}} > 0$)
+### Case 2: Downward Transition ($p_{\text{dist}} < 0$)
 
 When the coil transitions upward (fillet center lies above the line $C_1C_2$), arc angles increase in the **counter-clockwise (CCW)** direction.
 
-![Upward transition arc parameterization](images/coil-diag-04.jpg)
+![Downward transition arc parameterization](images/coil-diag-04.jpg)
 
 **Segment 1** — Arc on $C_1$ ($\text{Coil}_1$):
 
