@@ -198,7 +198,7 @@ In both cases, the three-segment structure ensures a seamless, $G^1$-continuous 
 
 **Table 1. Angular bounds for each arc segment.**
 
-| Segment | Arc | Downward (CW) | Upward (CCW) |
+| Segment | Arc | Upward (CW) | Downward (CCW) |
 |:---:|:---:|:---:|:---:|
 | 1 | Circle $C_1$ | $-\pi \leq \theta_1 \leq \theta_{\text{fillet},1}$ | $-\pi \leq \theta_1 \leq \theta_{\text{fillet},1}$ |
 | 2 | Fillet circle | $\theta_{\text{fillet},1} \leq \theta_2 \leq \theta_{\text{fillet},2}$ | $\theta_{\text{fillet},1} \leq \theta_2 \leq \theta_{\text{fillet},2}$ |
