@@ -503,7 +503,7 @@ PROCEDURE Vertex_Height_Shape_Similarity(δ):
 ```bash
 pip install coil-geom
 ```
-
+![](images/coil-matplotlib.jpg)
 ```Python
 import matplotlib.pyplot as plt
 import coil_geom as cg
