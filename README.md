@@ -117,8 +117,8 @@ That is, $P_1$ lies on $C_1$ at a distance $r_{\text{fillet}}$ from $P$, along t
 
 $$\vec{L} = \vec{P} - \vec{V_2}, \qquad \vec{P_2} = \vec{V_2} + r_{\text{fillet}} \cdot \frac{\vec{L}}{|\vec{L}|}$$
 
-| ![](images/coil-diag-02.jpg) | ![](images/coil-diag-03.jpg) |
-|:---:|:---:|
+![](images/coil-diag-02.jpg)
+![](images/coil-diag-03.jpg)
 
 ### Coil Direction and Segmentation
 
