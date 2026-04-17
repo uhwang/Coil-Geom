@@ -499,24 +499,12 @@ PROCEDURE Vertex_Height_Shape_Similarity(δ):
   RETURN f_b
 ```
 
----
 
-![Ellipse–ellipse coil up/down transitions](mdd%20-%20ellipse%20-%20ellipse%20-%20up%20down.svg)
-
-![Ellipse–ellipse coil, 5 coils](mdd%20-%20ellipse%20-%20ellipse%20-%20up%20down%20-%20ncoil%205.svg)
 ## Installation
 
 ```bash
 pip install coil-geom
 ```
-## Mathematical Background
-<p align="center">
-  <img src="images/coil-diag-02.jpg">
-  <img src="images/coil-diag-03.jpg">
-  <img src="images/coil-diag-04.jpg">
-  <img src="images/coil-diag-05.jpg">
-  <img src="images/coil-matplotlib.jpg">  
-</p>
 
 ```Python
 import matplotlib.pyplot as plt
