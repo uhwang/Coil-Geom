@@ -1,9 +1,15 @@
 '''
     Drawing Coil 
     
-    02/04/2026
+    02/04/2026 Initial Version
     02/18/2026 Refactor CoilGeom class
-    
+    04/25/2026 Added geometric transformation methods 
+               (rotate, flipud, fliplr) for enhanced 
+               coil design flexibility.
+               
+               Implemented Deferred Transformation in CoilGeom 
+               to support .rotate() and .flip() 
+               before .create_geom() is called.
     Uisang hwang
 '''
 
@@ -12,6 +18,7 @@ from scipy.optimize import minimize_scalar, fsolve
 
 _pi = np.pi
 _pi2= np.pi*2
+_d2r= _pi/180
 
 if __name__ == "__main__":
     import coil_gen
@@ -34,6 +41,96 @@ def get_coil_type(coil):
     else: 
         return "Invalid Coil Type"
 
+class CoilData:
+    def __init__(self, *args):
+        self.x = args[0]
+        self.y = args[1]
+        if len(args) > 2:
+            self.trace = True
+            self.seg = args[2]
+        else:
+            self.trace = False
+            self.seg = None
+     
+    def copy(self):
+        new_x, new_y = self.copy_data()
+        
+        if self.trace and self.seg is not None:
+            return CoilData(new_x, new_y, self.seg)
+        else:
+            return CoilData(new_x, new_y) 
+        
+    def copy_data(self):
+        return np.array(self.x, copy=True), \
+               np.array(self.y, copy=True)
+    
+    def _update_center(self):
+        self.x_c = (np.max(self.x) + np.min(self.x)) * 0.5
+        self.y_c = (np.max(self.y) + np.min(self.y)) * 0.5
+        
+    def __iter__(self):
+        yield self.x
+        yield self.y
+        if self.trace is True:
+            yield self.seg
+        
+    def flipud(self):
+        #self._update_center()
+        self.y = -self.y + 2*self.y[0]
+        if self.trace:
+            self.seg = [(x, -y + 2 * self.y_c) for x, y in self.seg]
+        return self
+
+    def fliplr(self):
+        self._update_center()
+        self.x = -self.x + 2*self.x_c
+        if self.trace:
+            self.seg = [(-x + 2 * self.x_c, y) for x, y in self.seg]
+        return self
+        
+    def trans(self, dx, dy):
+        self.x += dx
+        self.y += dy
+        
+        if self.trace:
+            self.seg = [(x + dx, y + dy) for x, y in self.seg]
+        return self        
+        
+    # axis = 0 (left), 1(center), 2(right)
+    def rotate(self, deg, axis=1):
+        self._update_center()
+        theta = deg * _d2r
+        cos_t = np.cos(theta)
+        sin_t = np.sin(theta)
+        
+        if axis == 0:
+            ref_x, ref_y = self.x[0], self.y[0]
+        elif axis == 2:
+            ref_x, ref_y = self.x[-1], self.y[-1]
+        else:
+            ref_x, ref_y = self.x_c, self.y_c
+            
+        x_shifted = self.x - ref_x
+        y_shifted = self.y - ref_y
+        
+        new_x = x_shifted * cos_t - y_shifted * sin_t + ref_x
+        new_y = x_shifted * sin_t + y_shifted * cos_t + ref_y
+        
+        self.x, self.y = new_x, new_y
+        
+        if self.trace and self.seg is not None:
+            self.seg = [
+                (
+                    (sx - ref_x) * cos_t - (sy - ref_y) * sin_t + ref_x,
+                    (sx - ref_x) * sin_t + (sy - ref_y) * cos_t + ref_y
+                ) 
+                for sx, sy in self.seg
+            ]
+            
+        self._update_center()
+            
+        return self
+            
 class VectorDiagram():
     def __init__(self):
         self._v1 = np.zeros(2)
@@ -73,7 +170,33 @@ class CoilGeom():
         self.ncoil = ncoil
         self.npnt = npnt
         self.npnt_sub = npnt_sub
+        self._pending_transform = {'rot': 0, 'axis': 1, 'flip': None}
+
+    def rotate(self, deg, axis=1):
+        self._pending_transform['rot'] = deg
+        self._pending_transform['axis'] = axis
+        return self
     
+    def flipud(self):
+        self._pending_transform['flip'] = 'ud'
+        return self
+    
+    def fliplr(self):
+        self._pending_transform['flip'] = 'lr'
+        return self
+    
+    def apply_pending(self, coil_data):
+        if self._pending_transform['rot'] != 0:
+            coil_data = coil_data.rotate(
+                self._pending_transform['rot'], 
+                axis=self._pending_transform['axis']
+            )
+        if self._pending_transform['flip'] == 'ud':
+            coil_data.flipud()
+        elif self._pending_transform['flip'] == 'lr':
+            coil_data.fliplr()
+        return coil_data    
+            
 class EllipseCoilOptimize():
     def __init__(self):
         self.a_s = 0.0
@@ -211,7 +334,10 @@ class EllipseCoil(CoilGeom, VectorDiagram):
         self.npnt_sub = npnt_sub if npnt_sub != self.npnt_sub else self.npnt_sub    
         
     def create_geom(self, trace = False, lead_l=0, lead_r=0):
-        return coil_gen.create_coil_geom(self, trace, lead_l, lead_r)
+        #return coil_gen.create_coil_geom(self, trace, lead_l, lead_r)
+        result = coil_gen.create_coil_geom(self, trace, lead_l, lead_r)
+        data = CoilData(*result)
+        return self.apply_pending(data)
         
     def __str__(self):
         return coil_print.print_coil(self)
@@ -475,11 +601,13 @@ class CircleCoil(CoilGeom, VectorDiagram):
             self.ncoil = ncoil if ncoil != self.ncoil else self.ncoil
             self.npnt = npnt if npnt != self.npnt else self.npnt
             self.npnt_sub = npnt_sub if npnt_sub != self.npnt_sub else self.npnt_sub        
-            
-            return coil_gen.create_coil_geom(self, trace)
+            #return coil_gen.create_coil_geom(self, trace)
 
     def create_geom(self, trace = False, lead_l=0, lead_r=0):
-        return coil_gen.create_coil_geom(self, trace, lead_l, lead_r)
+        result = coil_gen.create_coil_geom(self, trace, lead_l, lead_r)
+        data = CoilData(*result)
+        return self.apply_pending(data)
+        #return coil_gen.create_coil_geom(self, trace, lead_l, lead_r)
         
     def __str__(self):
         return coil_print.print_coil(self)
