@@ -5,7 +5,8 @@
     04/12/2026  Export coil data to PDF
 '''
 from abc import ABC, abstractmethod
-    
+from collections.abc import Iterable
+
 import collections 
 import collections.abc
 import pptx
@@ -67,7 +68,6 @@ def Polyline(slide, x, y, lcol, lthk, fcol, closed):
     line_shape.shadow.blur_radius = 0
     line_shape.shadow.distance    = 0
  
-    
 def draw_transition_ellipse(dev, co):
     ex, ey, ts = co.c1x, co.c1y, co.t_star
     aa, bb = co.axlen, co.bxlen
@@ -99,8 +99,23 @@ def draw_transition_ellipse(dev, co):
         
 class Device():
     def __init__(self, xx, yy):
-        self.xmin, self.xmax = min(xx), max(xx)
-        self.ymin, self.ymax = min(yy), max(yy)
+        if isinstance(xx, Iterable) and isinstance(yy, Iterable):
+            self.xmin, self.ymin = 1e10, 1e10
+            self.xmax, self.ymax = -1e10, -1e10
+            
+            for x_, y_ in zip(xx,yy):
+                xmin_, xmax_ = np.min(x_), np.max(x_)
+                ymin_, ymax_ = np.min(y_), np.max(y_)
+                
+                if xmin_ < self.xmin: self.xmin = xmin_
+                if xmax_ > self.xmax: self.xmax = xmax_
+                if ymin_ < self.ymin: self.ymin = ymin_
+                if ymax_ > self.ymax: self.ymax = ymax_
+                
+        else:
+            self.xmin, self.xmax = np.min(xx), np.max(xx)
+            self.ymin, self.ymax = np.min(yy), np.max(yy)
+            
         self.max_range = max(self.xmax-self.xmin, self.ymax-self.ymin)
         
     @abstractmethod
