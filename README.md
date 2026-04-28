@@ -531,4 +531,42 @@ axs[3].set_aspect('equal')
 plt.show()
 ```
 ![](images/3p_delta.jpg)
+```Python
+def three_delta(coil, lead_l, lead_r):
+
+    xs, ys = [], []
+    c1 = coil.create_geom(False, lead_l, lead_r)
+    x1, y1 = c1.get()
+    xs.append(x1)
+    ys.append(y1)
+    
+    c2 = c1.flipud().rotate(60, axis=0)
+    xs.append(c2.x)
+    ys.append(c2.y)
+    
+    c3 = c1.flipud().rotate(-60, axis=2)
+    xs.append(c3.x)
+    ys.append(c3.y)
+        
+    return xs, ys
+```
+
 ![](images/3p_y.jpg)
+```Python
+def three_y(coil, lead_l, lead_r):
+
+    xs, ys = [], []
+    c = coil.create_geom(False, lead_l, lead_r)
+    c1 = c.rotate(90, axis=0)
+    xs.append(c1.x)
+    ys.append(c1.y)
+    
+    c2 = c1.rotate(120, axis=0)
+    xs.append(c2.x)
+    ys.append(c2.y)
+    
+    c3 = c2.rotate(120, axis=0)
+    xs.append(c3.x)
+    ys.append(c3.y)        
+    return xs, ys
+```
