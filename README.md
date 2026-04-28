@@ -530,3 +530,5 @@ axs[3].plot(x4, y4)
 axs[3].set_aspect('equal')
 plt.show()
 ```
+![](images/3p_delta.jpg)
+![](images/3p_y.jpg)
