@@ -130,7 +130,7 @@ class Device():
     @abstractmethod
     def polyline(self, xx, yy, lcol, lthk): pass
     
-       
+'''       
 class DevicePPT(Device):
     def __init__(self, fname, xx, yy):
         super().__init__(xx,yy)
@@ -149,18 +149,62 @@ class DevicePPT(Device):
         min_edge = min(self.width_inches, self.height_inches)
         self.scale = min_edge/self.max_range
         
-        self.y_range = (self.ymax-self.ymin)
-        
     def xs_(self, xx): return (xx-self.xmin)*self.scale
     
     def ys_(self, yy): return (yy-self.ymin)*self.scale
     
     def polyline(self, xx, yy, lcol, lthk):
-        Polyline(self.slide, self.xs_(xx), self.ys_(yy), lcol, lthk, 'w', False)
+        py = self.height_inches-self.ys_(yy)
+        Polyline(self.slide, self.xs_(xx), py, lcol, lthk, 'w', False)
     
     def close(self):
         self.ppt.save(self.fname)
+'''        
+class DevicePPT(Device):
+    def __init__(self, fname, xx, yy):
+        super().__init__(xx, yy)
+        self.fname = fname
+        self.ppt = pptx.Presentation()
+        self.blank_slide_layout = self.ppt.slide_layouts[6]
+        self.slide = self.ppt.slides.add_slide(self.blank_slide_layout)
+        
+        # 1. 슬라이드 크기 (Inches)
+        self.sw = self.ppt.slide_width / 914400
+        self.sh = self.ppt.slide_height / 914400
+        
+        # 2. 스케일 계산 (80% 크기로 맞춤)
+        margin = 0.8
+        self.scale = (min(self.sw, self.sh) * margin) / self.max_range
+        
+        # 3. [핵심] 중앙 배치를 위한 오프셋 계산
+        # 그림의 실제 출력 크기(가로, 세로)
+        content_w = (self.xmax - self.xmin) * self.scale
+        content_h = (self.ymax - self.ymin) * self.scale
+        
+        # 슬라이드 중앙에 배치하기 위한 시작점(Left, Top)
+        self.off_x = (self.sw - content_w) / 2
+        self.off_y = (self.sh - content_h) / 2
 
+    def xs_(self, xx): 
+        # 원점에서 이동한 만큼 scale을 곱하고, 중앙 여백(off_x)을 더함
+        return (xx - self.xmin) * self.scale + self.off_x
+    
+    def ys_(self, yy): 
+        # 이 함수는 순수하게 스케일링된 거리만 반환하도록 유지 (기존 로직)
+        return (yy - self.ymin) * self.scale
+    
+    def polyline(self, xx, yy, lcol, lthk):
+        # [상하 반전 + 중앙 배치 공식]
+        # 전체 그림 영역(content_h)에서 현재 높이(self.ys_)를 뺀 뒤, 
+        # 슬라이드 중앙 여백(self.off_y)을 더해줍니다.
+        content_h = (self.ymax - self.ymin) * self.scale
+        py = (content_h - self.ys_(yy)) + self.off_y
+        
+        Polyline(self.slide, self.xs_(xx), py, lcol, lthk, 'w', False)
+ 
+    def close(self):
+        self.ppt.save(self.fname)
+        
 def save_ppt(coil, fname, trace=False, lcol='b', lthk=0.01, debug=False, lead_l=0, lead_r=0):
     fc = 'w'
     if trace:
