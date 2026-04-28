@@ -26,43 +26,63 @@ coil_t_list = ["cc", "ec", "ecs", "ecc"]
 def three_delta(coil, lead_l, lead_r):
 
     xs, ys = [], []
-    c = coil.create_geom(False, lead_l, lead_r)
-    c_= c.copy()
-    x1, y1 = c.copy_data()
+    c1 = coil.create_geom(False, lead_l, lead_r)
+    x1, y1 = c1.get()
     xs.append(x1)
     ys.append(y1)
     
-    c.flipud().rotate(-60, axis=0)
-    x2, y2 = c.copy_data()
-    xs.append(x2)
-    ys.append(y2)
+    c2 = c1.flipud().rotate(60, axis=0)
+    xs.append(c2.x)
+    ys.append(c2.y)
     
-    c_.flipud().rotate(60, axis=2)
-    x3, y3 = c_.copy_data()
-    xs.append(x3)
-    ys.append(y3)
+    c3 = c1.flipud().rotate(-60, axis=2)
+    xs.append(c3.x)
+    ys.append(c3.y)
         
     return xs, ys
+ 
+def create_coil(c_t, p_dist, ncoil):
         
-def save_3phase_delta(fname, p_dist=-0.4, ncoil=5, lead_l=4, lead_r=4, lcol='b', lthk=0.01, coil_t="ecc"):
+    if c_t == coil_t_list[0]:
+        coil = cg.CircleCoil(p_dist=p_dist, ncoil=ncoil)
+    elif c_t == coil_t_list[1]:
+        coil = cg.EllipseCoil(p_dist=p_dist, ncoil=ncoil)
+    elif c_t == coil_t_list[2]:
+        coil = cg.EllipseCoilShape(p_dist=p_dist, ncoil=ncoil)
+    elif c_t == coil_t_list[3]:
+        coil = cg.EllipseCoilCurvature(p_dist=p_dist, ncoil=ncoil)
+ 
+    return coil
+    
+def save_3phase_delta(fname, p_dist=0.4, ncoil=5, lead_l=4, lead_r=4, lcol='b', lthk=0.01, coil_t="ecc"):
 
     c_t = coil_t.lower()
-    if c_t in coil_t_list:
-        if c_t == coil_t_list[0]:
-            coil = cg.CircleCoil(p_dist=p_dist, ncoil=ncoil)
-        elif c_t == coil_t_list[1]:
-            coil = cg.EllipseCoil(p_dist=p_dist, ncoil=ncoil)
-        elif c_t == coil_t_list[2]:
-            coil = cg.EllipseCoilShape(p_dist=p_dist, ncoil=ncoil)
-        elif c_t == coil_t_list[3]:
-            coil = cg.EllipseCoilCurvature(p_dist=p_dist, ncoil=ncoil)
-   
-        xs, ys = three_delta(coil, lead_l, lead_r)
-        dev = cxp.DevicePPT(fname, xs, ys)
-        for x_, y_ in zip(xs, ys):
-            dev.polyline(dev.xs_(x_), dev.ys_(y_), lcol, lthk)
+    if c_t not in coil_t_list:
+        return 
+    
+    coil = create_coil(c_t, p_dist, ncoil)
+    xs, ys = three_delta(coil, lead_l, lead_r)
+    
+    dev = cxp.DevicePPT(fname, xs, ys)
+    for x_, y_ in zip(xs, ys):
+        dev.polyline(dev.xs_(x_), dev.ys_(y_), lcol, lthk)
 
-        dev.close()        
+    dev.close()        
+
+def plot_3phase_delta(p_dist=0.4, ncoil=5, lead_l=4, lead_r=4, lcol='b', lthk=0.01, coil_t="ecc"):
+    import matplotlib.pyplot as plt
+    
+    c_t = coil_t.lower()
+    if c_t not in coil_t_list:
+        return 
+    
+    coil = create_coil(c_t, p_dist, ncoil)
+    xs, ys = three_delta(coil, lead_l, lead_r)
+        
+    plt.plot(xs[0], ys[0])
+    plt.plot(xs[1], ys[1])
+    plt.plot(xs[2], ys[2])
+    plt.show()
         
 def three_y(cg):
     pass
