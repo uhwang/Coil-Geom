@@ -1,5 +1,5 @@
 # coil-geom
-
+![](images/coil%20plots.jpg)
 **coil-geom** is a Python package for generating and visualizing **coil and inductor geometries** using clean, parametric definitions.  
 It is designed for engineering, scientific visualization, and symbolic / schematic-style plotting.
 
@@ -570,4 +570,4 @@ def three_y(coil, lead_l, lead_r):
     ys.append(c3.y)        
     return xs, ys
 ```
-![](images/coil%20plots.jpg)
+
