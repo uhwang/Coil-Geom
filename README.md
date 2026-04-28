@@ -570,3 +570,4 @@ def three_y(coil, lead_l, lead_r):
     ys.append(c3.y)        
     return xs, ys
 ```
+![](images/coil_plots.jpg)
