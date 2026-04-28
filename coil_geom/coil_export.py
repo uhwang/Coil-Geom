@@ -130,6 +130,7 @@ class Device():
     @abstractmethod
     def polyline(self, xx, yy, lcol, lthk): pass
     
+       
 class DevicePPT(Device):
     def __init__(self, fname, xx, yy):
         super().__init__(xx,yy)
@@ -143,12 +144,15 @@ class DevicePPT(Device):
         height_emu = self.ppt.slide_height
         
         # Convert to inches for readability
-        width_inches = width_emu / 914400
-        height_inches = height_emu / 914400
-        min_edge = min(width_inches, height_inches)
+        self.width_inches = width_emu / 914400
+        self.height_inches = height_emu / 914400
+        min_edge = min(self.width_inches, self.height_inches)
         self.scale = min_edge/self.max_range
         
+        self.y_range = (self.ymax-self.ymin)
+        
     def xs_(self, xx): return (xx-self.xmin)*self.scale
+    
     def ys_(self, yy): return (yy-self.ymin)*self.scale
     
     def polyline(self, xx, yy, lcol, lthk):
@@ -156,7 +160,6 @@ class DevicePPT(Device):
     
     def close(self):
         self.ppt.save(self.fname)
-     
 
 def save_ppt(coil, fname, trace=False, lcol='b', lthk=0.01, debug=False, lead_l=0, lead_r=0):
     fc = 'w'
