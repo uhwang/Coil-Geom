@@ -159,7 +159,7 @@ class DevicePPT(Device):
     def close(self):
         self.ppt.save(self.fname)
 
-def save_ppt(coil, fname, trace=False, lcol='b', lthk=0.01, debug=False, lead_l=0, lead_r=0):
+def save_ppt(coil, fname, trace=False, lcol='b', lthk=0.05, debug=False, lead_l=0, lead_r=0):
     fc = 'w'
     if trace:
         c1, c2, c3 = 'r', 'g', 'b'
@@ -170,14 +170,14 @@ def save_ppt(coil, fname, trace=False, lcol='b', lthk=0.01, debug=False, lead_l=
         for i,s in enumerate(seg):
             ii=i+1
             if ii%2 == 0:
-                Polyline(dev.slide, dev.xs_(s[0]), dev.ys_(s[1]), c2, lthk, fc, False)
+                dev.polyline(s[0], s[1], c2, lthk)
             else:
-                Polyline(dev.slide, dev.xs_(s[0]), dev.ys_(s[1]), c1 if bit else c3, lthk, fc, False)
+                Polyline(s[0], s[1], c1 if bit else c3, lthk)
                 bit = not bit
     else:
         xx, yy = coil.create_geom(trace, lead_l, lead_r)
         dev = DevicePPT(fname, xx, yy)
-        Polyline(dev.slide, dev.xs_(xx), dev.ys_(yy), lcol, lthk, fc, False)
+        dev.polyline(xx, yy, lcol, lthk)
         
     if debug:
         draw_transition_ellipse(dev, coil)
@@ -199,17 +199,19 @@ _move_to_cmd = 'M'
 _line_to_cmd = "L"
                
 class DeviceSVG(Device):
-    def __init__(self, fname, xx, yy, hgt=300, ar=1.33, xgap=3, ygap=3):
+    def __init__(self, fname, xx, yy, hgt=400, ar=1.33, xgap=1, ygap=1):
         super().__init__(xx, yy)
+        hgt = hgt
         wid = int(hgt*ar)
+        
         self.fp = open(fname, "wt")
         self.fp.write("<svg version=\"1.1\"\n"\
                       "width=\"%d\" height=\"%d\"\n"
                       "xmlns=\"http://www.w3.org/2000/svg\">\n"\
                       %(int(wid),int(hgt)))
-        self.scale = min(hgt,wid)/self.max_range
-        self.xx = xx
-        self.yy = yy
+        self.wid_ = wid*0.9
+        self.hgt_ = hgt*0.9
+        self.scale = min(self.wid_,self.hgt_)/self.max_range
         self.xgap = xgap
         self.ygap = ygap
         
@@ -222,25 +224,25 @@ class DeviceSVG(Device):
                       lc[0], 
                       lc[1], 
                       lc[2],
-                      1 if lt < 0.001 else lt))
+                      1 if lt < 1 else lt))
                       
     def create_pnt_list(self, xx, yy):
-        xs = self.xs_(xx)
-        ys = self.ys_(yy)
+        xs = self.xgap+self.xs_(xx)
+        ys = self.ygap+self.hgt_-self.ys_(yy)
         for i, (x1, y1) in enumerate(zip(xs, ys)):
             self.fp.write("%3.3f %3.3f, "%(x1, y1))
             if (i+1)%_points_per_line == 0:
                 self.fp.write(_next_line)
         self.fp.write("\"\n")      
         
-    def xs_(self, xx): return self.xgap+(xx-self.xmin)*self.scale
-    def ys_(self, yy): return self.ygap+(yy-self.ymin)*self.scale
+    def xs_(self, xx): return (xx-self.xmin)*self.scale
+    def ys_(self, yy): return (yy-self.ymin)*self.scale
     
     def close(self):
         self.fp.write("</svg>")
         self.fp.close()     
 
-def save_svg(coil, fname, trace=False, lcol='b', lthk=0.01, debug=False, lead_l=0, lead_r=0):
+def save_svg(coil, fname, trace=False, lcol='b', lthk=0.05, debug=False, lead_l=0, lead_r=0):
     
     if trace:
         c1, c2, c3 = 'r', 'g', 'b'
@@ -309,9 +311,9 @@ class DevicePDF(Device):
             compression=False):
             
         super().__init__(xx, yy)
-        wid = (size[0]-2*xgap)
-        hgt = (size[1]-2*ygap)
-        self.scale = min(hgt,wid)/self.max_range
+        self.wid = (size[0]-2*xgap)
+        self.hgt = (size[1]-2*ygap)
+        self.scale = 0.8*min(self.hgt,self.wid)/self.max_range
         self.xgap = xgap
         self.ygap = ygap
         
@@ -327,6 +329,7 @@ class DevicePDF(Device):
         self._sy = 0
         self._ex = size[0]*_points_inch
         self._ey = size[1]*_points_inch
+        self._ey1= self.hgt*_points_inch
 
         if layout_dir.upper == 'P':
             self.rotate = 90
@@ -343,8 +346,8 @@ class DevicePDF(Device):
         self.fp = open(fname, "wb")
         
     def polyline(self, xx, yy, lcol, lthk, fcol=None, closed=False):
-        xs = self.xs_(xx)
-        ys = self.ys_(yy)
+        xs = self.xgap*_points_inch+self.xs_(xx)
+        ys = self._ey1-self.ys_(yy)
         lc = color_normalize(get_color(lcol)) if lcol else lcol
         fc = color_normalize(get_color(fcol)) if fcol else fcol
         lt = lthk*self.scale*_points_inch
@@ -452,10 +455,10 @@ class DevicePDF(Device):
         self.fp.write(bytes("%%EOF",'utf-8'))
         self.fp.close()
 
-    def xs_(self, xx): return (self.xgap+(xx-self.xmin)*self.scale)*_points_inch
-    def ys_(self, yy): return (self.ygap+(yy-self.ymin)*self.scale)*_points_inch
+    def xs_(self, xx): return (xx-self.xmin)*self.scale*_points_inch
+    def ys_(self, yy): return (yy-self.ymin)*self.scale*_points_inch
           
-def save_pdf(coil, fname, trace=False, lcol='b', lthk=0.01, debug=False, lead_l=0, lead_r=0):
+def save_pdf(coil, fname, trace=False, lcol='b', lthk=0.05, debug=False, lead_l=0, lead_r=0):
     
     if trace:
         c1, c2, c3 = 'r', 'g', 'b'
