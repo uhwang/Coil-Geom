@@ -77,7 +77,7 @@ def create_coil(c_t, p_dist, ncoil):
 def create_3phase(coil_t, p_dist, ncoil, lead_l, lead_r, phase_t):
     c_t = coil_t.lower()
     if c_t not in coil_t_list:
-        raise ValueError(f"Error(create_3phase): invalid coil type->{c_t}")
+        raise ValueError(f"create_3phase: invalid coil type->{c_t}")
     
     coil = create_coil(c_t, p_dist, ncoil)
     if phase_t == phase_t_delta: 
@@ -85,32 +85,55 @@ def create_3phase(coil_t, p_dist, ncoil, lead_l, lead_r, phase_t):
     elif phase_t == phase_t_y: 
         xs, ys = three_y(coil, lead_l, lead_r)
     else:
-        raise ValueError(f"Error(create_3phase): invalid phase type->{phase_t}")
+        raise ValueError(f"create_3phase: invalid phase type->{phase_t}")
         
     return xs, ys
-    
-def save_3phase_delta(fname, p_dist=0.4, ncoil=5, lead_l=4, lead_r=4, lcol='b', lthk=0.01, coil_t="ecc"):
+
+def create_device(fname, xs, ys):
+    f_n = fname.lower()
+    dev_name=""
+    try: 
+        if f_n.endswith(".pdf"):
+            dev_name = "PDF"
+            dev = cxp.DevicePDF(fname, xs, ys)
+        elif f_n.endswith(".svg"):
+            dev_name = "SVG"
+            dev = cxp.DeviceSVG(fname, xs, ys)
+        elif f_n.endswith(".pptx"):
+            dev_name = "PPT"
+            dev = cxp.DevicePPT(fname, xs, ys)
+        else:
+            raise ValueError(f"create_device: invalid device extension->{fname}")
+    except Exception as e:
+        raise ValueError(f"create_device: {dev_name}:{e}")
+        
+    return dev
+        
+def save_3phase_delta(fname, p_dist=0.4, ncoil=5, lead_l=4, lead_r=4, lcol='b', lthk=0.05, coil_t="ecc"):
     try:
         xs, ys = create_3phase(coil_t, p_dist, ncoil, lead_l, lead_r, phase_t_delta)
     except Exception as e:
-        print(f"Error(save_3phase_delta->create_3phase): {e}")
+        print(f"save_3phase_delta: {e}")
         return
         
-    dev = cxp.DevicePPT(fname, xs, ys)
-    for x_, y_ in zip(xs, ys):
-        dev.polyline(dev.xs_(x_), dev.ys_(y_), lcol, lthk)
-
-    dev.close()  
-
+    try: 
+        dev = create_device(fname, xs, ys)
+        for x_, y_ in zip(xs, ys):
+            dev.polyline(x_, y_, lcol, lthk)
+        dev.close()  
+    except Exception as e:
+        print(f"save_3phase_delta: {e}")
+        return
+        
     return xs, ys    
 
-def plot_3phase_delta(p_dist=0.4, ncoil=5, lead_l=5, lead_r=5, lcol='b', lthk=0.01, coil_t="ecc"):
+def plot_3phase_delta(p_dist=0.4, ncoil=5, lead_l=5, lead_r=5, lcol='b', lthk=0.05, coil_t="ecc"):
     import matplotlib.pyplot as plt
     
     try:
         xs, ys = create_3phase(coil_t, p_dist, ncoil, lead_l, lead_r, phase_t_y)
     except Exception as e:
-        print(f"Error(plot_3phase_delta->create_3phase): {e}")
+        print(f"plot_3phase_delta: {e}")
         return
         
     plt.plot(xs[0], ys[0], color=lcol)
@@ -119,29 +142,32 @@ def plot_3phase_delta(p_dist=0.4, ncoil=5, lead_l=5, lead_r=5, lcol='b', lthk=0.
     plt.axis('equal')
     plt.show()
         
-def save_3phase_y(fname, p_dist=0.4, ncoil=5, lead_l=6, lead_r=6, lcol='b', lthk=0.01, coil_t="ecc"):
+def save_3phase_y(fname, p_dist=0.4, ncoil=5, lead_l=6, lead_r=6, lcol='b', lthk=0.05, coil_t="ecc"):
 
     try:
         xs, ys = create_3phase(coil_t, p_dist, ncoil, lead_l, lead_r, phase_t_y)
     except Exception as e:
-        print(f"Error(save_3phase_y->create_3phase): {e}")
+        print(f"save_3phase_y: {e}")
         return
     
-    dev = cxp.DevicePPT(fname, xs, ys)
-    for x_, y_ in zip(xs, ys):
-        dev.polyline(dev.xs_(x_), dev.ys_(y_), lcol, lthk)
-
-    dev.close()
+    try: 
+        dev = create_device(fname, xs, ys)
+        for x_, y_ in zip(xs, ys):
+            dev.polyline(x_, y_, lcol, lthk)
+        dev.close()  
+    except Exception as e:
+        print(f"save_3phase_y: {e}")
+        return
 
     return xs, ys
 
-def plot_3phase_y(p_dist=0.4, ncoil=5, lead_l=5, lead_r=5, lcol='b', lthk=0.01, coil_t="ecc"):
+def plot_3phase_y(p_dist=0.4, ncoil=5, lead_l=5, lead_r=5, lcol='b', lthk=0.05, coil_t="ecc"):
     import matplotlib.pyplot as plt
     
     try:
         xs, ys = create_3phase(coil_t, p_dist, ncoil, lead_l, lead_r, phase_t_y)
     except Exception as e:
-        print(f"Error(plot_3phase_y->create_3phase): {e}")
+        print(f"plot_3phase_y: {e}")
         return
         
     plt.plot(xs[0], ys[0], color=lcol)
