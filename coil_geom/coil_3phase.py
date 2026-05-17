@@ -112,19 +112,14 @@ def create_device(fname, xs, ys):
 def save_3phase_delta(fname, p_dist=0.4, ncoil=5, lead_l=4, lead_r=4, lcol='b', lthk=0.05, coil_t="ecc"):
     try:
         xs, ys = create_3phase(coil_t, p_dist, ncoil, lead_l, lead_r, phase_t_delta)
-    except Exception as e:
-        print(f"save_3phase_delta: {e}")
-        return
-        
-    try: 
         dev = create_device(fname, xs, ys)
+        
         for x_, y_ in zip(xs, ys):
             dev.polyline(x_, y_, lcol, lthk)
         dev.close()  
     except Exception as e:
         print(f"save_3phase_delta: {e}")
-        return
-
+        
 def plot_3phase_delta(p_dist=0.4, ncoil=5, lead_l=5, lead_r=5, lcol='b', lthk=0.05, coil_t="ecc"):
     import matplotlib.pyplot as plt
     
@@ -144,18 +139,13 @@ def save_3phase_y(fname, p_dist=0.4, ncoil=5, lead_l=6, lead_r=6, lcol='b', lthk
 
     try:
         xs, ys = create_3phase(coil_t, p_dist, ncoil, lead_l, lead_r, phase_t_y)
-    except Exception as e:
-        print(f"save_3phase_y: {e}")
-        return
-    
-    try: 
         dev = create_device(fname, xs, ys)
+
         for x_, y_ in zip(xs, ys):
             dev.polyline(x_, y_, lcol, lthk)
         dev.close()  
     except Exception as e:
         print(f"save_3phase_y: {e}")
-        return
 
 def plot_3phase_y(p_dist=0.4, ncoil=5, lead_l=5, lead_r=5, lcol='b', lthk=0.05, coil_t="ecc"):
     import matplotlib.pyplot as plt
