@@ -14,6 +14,7 @@
 '''
 
 import numpy as np
+import copy
 from scipy.optimize import minimize_scalar, fsolve
 
 _pi = np.pi
@@ -40,9 +41,6 @@ def get_coil_type(coil):
         return coil_util._coil_type_ellipse
     else: 
         return "Invalid Coil Type"
-
-import numpy as np
-import copy
 
 class CoilData:
     def __init__(self, *args, tasks=None):
@@ -132,7 +130,7 @@ class CoilData:
             elif op == 'flipud':
                 curr_x, curr_y, curr_seg = self._exec_flipud(curr_x, curr_y, curr_seg)
             elif op == 'fliplr':
-                curr_x, curr_y, curr_seg = self._exec_fliplr(curr_x, curr_y, curr_seg)
+                curr_x, curr_y, curr_seg = self._exec_fliplr(curr_x, curr_y, curr_seg, *task[1:])
         
         return curr_x, curr_y, curr_seg
 
