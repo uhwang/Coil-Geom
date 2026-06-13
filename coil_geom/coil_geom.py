@@ -262,6 +262,9 @@ class CoilGeom():
             
         return out
         
+    def get_geom(self, trace=False, lead_l=0, lead_r=0):
+        return coil_gen.create_coil_geom(self, trace, lead_l, lead_r)
+        
     def create_geom(self, trace=False, lead_l=0, lead_r=0):
         result = coil_gen.create_coil_geom(self, trace, lead_l, lead_r)
         
@@ -374,7 +377,7 @@ class EllipseCoil(CoilGeom, VectorDiagram):
                         bxlen=2, 
                         r_dist = 1.3, 
                         p_dist = -0.4, 
-                        ncoil = 2, 
+                        ncoil = 5, 
                         npnt = 50, 
                         npnt_sub = 25):
                         
