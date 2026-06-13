@@ -3,12 +3,14 @@
     04/09/2026  Export coil data to SVG
     04/11/2026  Debug Plot
     04/12/2026  Export coil data to PDF
+    05/30/2026  Support BytesIO buffer for fname (SVG, PDF, PPTX)
 '''
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 
 import collections 
 import collections.abc
+import io
 import pptx
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
@@ -49,10 +51,9 @@ def Polyline(slide, x, y, lcol, lthk, fcol, closed):
         if isinstance(fcol, tuple):
             line_shape.fill.solid()
             line_shape.fill.fore_color.rgb = RGBColor(fcol[0], fcol[1], fcol[2])
-            # lcol is None, set lcol as fcol if not the default colot works
             if not isinstance(lcol, tuple):
                 line_shape.line.color.rgb = RGBColor(fcol[0], fcol[1], fcol[2])
-                line_shape.line.width = Inches(0.001) # dummy thinkness
+                line_shape.line.width = Inches(0.001)
         else:
             line_shape.fill.background()    
     
@@ -132,17 +133,15 @@ class Device():
      
 class DevicePPT(Device):
     def __init__(self, fname, xx, yy):
-        super().__init__(xx,yy)
-        self.fname = fname
+        super().__init__(xx, yy)
+        self.fname = fname  # str 또는 BytesIO
         self.ppt = pptx.Presentation()
         self.blank_slide_layout = self.ppt.slide_layouts[6]
         self.slide = self.ppt.slides.add_slide(self.blank_slide_layout)
         
-        # Get width and height in EMUs
         width_emu = self.ppt.slide_width
         height_emu = self.ppt.slide_height
         
-        # Convert to inches for readability
         width_inches = width_emu / 914400
         self.height_inches = height_emu / 914400
         min_edge = min(width_inches, self.height_inches)
@@ -157,54 +156,26 @@ class DevicePPT(Device):
         Polyline(self.slide, self.xs_(xx), py, lcol, lthk, 'w', False)
     
     def close(self):
+        # fname이 BytesIO면 버퍼에, 문자열이면 파일에 저장
         self.ppt.save(self.fname)
 
-def save_ppt(coil, fname, trace=False, lcol='b', lthk=0.05, debug=False, lead_l=0, lead_r=0):
-    fc = 'w'
-    if trace:
-        c1, c2, c3 = 'r', 'g', 'b'
-        xx, yy, seg = coil.create_geom(trace, lead_l, lead_r)
-        dev = DevicePPT(fname, xx, yy)
-        
-        bit=True
-        for i,s in enumerate(seg):
-            ii=i+1
-            if ii%2 == 0:
-                dev.polyline(s[0], s[1], c2, lthk)
-            else:
-                Polyline(s[0], s[1], c1 if bit else c3, lthk)
-                bit = not bit
-    else:
-        xx, yy = coil.create_geom(trace, lead_l, lead_r)
-        dev = DevicePPT(fname, xx, yy)
-        dev.polyline(xx, yy, lcol, lthk)
-        
-    if debug:
-        draw_transition_ellipse(dev, coil)
-        
-    dev.close()
-    
-'''
-    Device SVG
-'''
-    
-_line_format_begin = "<line x1=\"%3.3f\" y1=\"%3.3f\" x2=\"%3.3f\" y2=\"%3.3f\" "
-_line_format_end = " style=\"fill:none;stroke:rgb(%d,%d,%d);stroke-width:%3.3f\" />\n"
-_polygon_format_end = "style=\"stroke:rgb(%d,%d,%d);stroke-width:%d;fill:rgb(%d,%d,%d);\"/>\n"
-_polygon_format_end_nostroke = "style=\"stroke:none;fill:rgb(%d,%d,%d);\"/>\n"
-_polygon_format_end_nofill = "style=\"stroke:rgb(%d,%d,%d);stroke-width:%d;fill:none;\"/>\n"
-_next_line = "\n"              
-_points_per_line = 5
-_move_to_cmd = 'M'
-_line_to_cmd = "L"
-               
+
 class DeviceSVG(Device):
     def __init__(self, fname, xx, yy, hgt=400, ar=1.33, xgap=1, ygap=1):
         super().__init__(xx, yy)
         hgt = hgt
         wid = int(hgt*ar)
         
-        self.fp = open(fname, "wt")
+        self._is_buffer = isinstance(fname, io.BytesIO)
+
+        if self._is_buffer:
+            # BytesIO는 텍스트 모드로 쓸 수 없으므로 StringIO를 내부 버퍼로 사용
+            self._str_buf = io.StringIO()
+            self._byte_buf = fname
+            self.fp = self._str_buf
+        else:
+            self.fp = open(fname, "wt")
+
         self.fp.write("<svg version=\"1.1\"\n"\
                       "width=\"%d\" height=\"%d\"\n"
                       "xmlns=\"http://www.w3.org/2000/svg\">\n"\
@@ -214,16 +185,14 @@ class DeviceSVG(Device):
         self.scale = min(self.wid_,self.hgt_)/self.max_range
         self.xgap = xgap
         self.ygap = ygap
-        
+
     def polyline(self, xx, yy, lcol, lthk):
         lc = get_color(lcol)
         lt = self.scale*lthk
         self.fp.write("<polyline points=\"\n")
         self.create_pnt_list(xx, yy)
-        self.fp.write(_line_format_end%(\
-                      lc[0], 
-                      lc[1], 
-                      lc[2],
+        self.fp.write(" style=\"fill:none;stroke:rgb(%d,%d,%d);stroke-width:%3.3f\" />\n" % (
+                      lc[0], lc[1], lc[2],
                       1 if lt < 1 else lt))
                       
     def create_pnt_list(self, xx, yy):
@@ -231,8 +200,8 @@ class DeviceSVG(Device):
         ys = self.ygap+self.hgt_-self.ys_(yy)
         for i, (x1, y1) in enumerate(zip(xs, ys)):
             self.fp.write("%3.3f %3.3f, "%(x1, y1))
-            if (i+1)%_points_per_line == 0:
-                self.fp.write(_next_line)
+            if (i+1)%5 == 0:
+                self.fp.write("\n")
         self.fp.write("\"\n")      
         
     def xs_(self, xx): return (xx-self.xmin)*self.scale
@@ -240,36 +209,24 @@ class DeviceSVG(Device):
     
     def close(self):
         self.fp.write("</svg>")
-        self.fp.close()     
+        if self._is_buffer:
+            # StringIO 내용을 BytesIO에 기록
+            self._byte_buf.write(self._str_buf.getvalue().encode('utf-8'))
+            self._str_buf.close()
+        else:
+            self.fp.close()
 
-def save_svg(coil, fname, trace=False, lcol='b', lthk=0.05, debug=False, lead_l=0, lead_r=0):
-    
-    if trace:
-        c1, c2, c3 = 'r', 'g', 'b'
-        xx, yy, seg = coil.create_geom(trace, lead_l, lead_r)
-        dev = DeviceSVG(fname, xx, yy)
-        
-        bit=True
-        for i,s in enumerate(seg):
-            ii=i+1
-            if ii%2 == 0:
-                dev.polyline(s[0], s[1], c2, lthk)
-            else:
-                dev.polyline(s[0], s[1], c1 if bit else c3, lthk)
-                bit = not bit
-    else:
-        xx, yy = coil.create_geom(trace, lead_l, lead_r)
-        dev = DeviceSVG(fname, xx, yy)
-        dev.polyline(xx, yy, lcol, lthk)
-        
-    if debug:
-        draw_transition_ellipse(dev, coil)
-        
-    dev.close()        
-    
-'''
-    PDF Driver
-'''    
+
+_line_format_begin = "<line x1=\"%3.3f\" y1=\"%3.3f\" x2=\"%3.3f\" y2=\"%3.3f\" "
+_line_format_end = " style=\"fill:none;stroke:rgb(%d,%d,%d);stroke-width:%3.3f\" />\n"
+_polygon_format_end = "style=\"stroke:rgb(%d,%d,%d);stroke-width:%d;fill:rgb(%d,%d,%d);\"/>\n"
+_polygon_format_end_nostroke = "style=\"stroke:none;fill:rgb(%d,%d,%d);\"/>\n"
+_polygon_format_end_nofill = "style=\"stroke:rgb(%d,%d,%d);stroke-width:%d;fill:none;\"/>\n"
+_next_line = "\n"              
+_points_per_line = 5
+_move_to_cmd = 'M'
+_line_to_cmd = "L"
+
 
 import zlib
 import math
@@ -300,6 +257,7 @@ _x_inverse = lambda wid : "-1.0000 0.0000 "\
                           "%3.4f 0.0000 cm\n"%(
                           wid
                           )
+
 def color_normalize(c):
     return (c[0]/255., c[1]/255., c[2]/255.)
     
@@ -343,7 +301,10 @@ class DevicePDF(Device):
                      bytes(''.join(obj_buffer_list), 'utf-8')
         self.obj_list.append(obj_buffer)
         self.obj_length += len(obj_buffer)
-        self.fp = open(fname, "wb")
+
+        # fname이 BytesIO면 버퍼에, 문자열이면 파일에 저장
+        self._is_buffer = isinstance(fname, io.BytesIO)
+        self.fp = fname if self._is_buffer else open(fname, "wb")
         
     def polyline(self, xx, yy, lcol, lthk, fcol=None, closed=False):
         xs = self.xgap*_points_inch+self.xs_(xx)
@@ -352,7 +313,7 @@ class DevicePDF(Device):
         fc = color_normalize(get_color(fcol)) if fcol else fcol
         lt = lthk*self.scale*_points_inch
         
-        obj_buffer_list = ["q\n"] #saveDC
+        obj_buffer_list = ["q\n"]
         
         if lcol:
             obj_buffer_list.append("%1.4f %1.4f %1.4f RG\n"%(lc[0], lc[1], lc[2]))
@@ -368,13 +329,13 @@ class DevicePDF(Device):
         
         if closed:
             if lcol and fcol:
-                obj_buffer_list.append("b\nQ\n") # close, fill, stroke and restore DC
+                obj_buffer_list.append("b\nQ\n")
             elif not isinstance(lcol, color.Color) and fcol:
-                obj_buffer_list.append("f\nQ\n") # close, fill, and restore DC
+                obj_buffer_list.append("f\nQ\n")
             else:
-                obj_buffer_list.append("s\nQ\n") # close, stroke and restore DC
+                obj_buffer_list.append("s\nQ\n")
         else:
-            obj_buffer_list.append("S\nQ\n")     # stroke and restoreDC
+            obj_buffer_list.append("S\nQ\n")
             
         obj_buffer = ''.join(obj_buffer_list) if self.compression else\
                      bytes(''.join(obj_buffer_list), 'utf-8')
@@ -384,13 +345,7 @@ class DevicePDF(Device):
     def polygon(self, xx, yy, lcol, lthk, fcol):
         self.polyline(xx,yy,lcol,lthk,fcol,True)
     
-    #---------------------------------------------------------------
-    # Currently, the total number of ojb is 4. 
-    # The 4th obj is the ploting commands. 
-    #---------------------------------------------------------------
-    
     def close(self):
-
         obj1 = "1 0 obj\n<< /Type /Catalog /Pages 2 0 R>>\nendobj\n"
         obj2 = "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1>>\nendobj\n"
         obj3 = "3 0 obj\n<<\n/Type /Page\n/Parent 2 0 R\n"\
@@ -399,28 +354,23 @@ class DevicePDF(Device):
                 "/Contents 4 0 R\n>>\nendobj\n"%\
                 (self._sx, self._sy, self._ex, self._ey, self.rotate)
         
-        # Write PDF Header
         self.file_size = 0
         self.fp.write(bytes(_pdf_header,'utf-8'))
         self.file_size += len(_pdf_header)
         obj_pos = [self.file_size]   
         
-        # Write Obj 1
         self.fp.write(bytes(obj1,'utf-8'))
         self.file_size += len(obj1)
         obj_pos.append(self.file_size)
         
-        # Write Obj 2
         self.fp.write(bytes(obj2,'utf-8'))
         self.file_size += len(obj2)
         obj_pos.append(self.file_size)
         
-        # Write Obj 3
         self.fp.write(bytes(obj3,'utf-8'))
         self.file_size += len(obj3)
         obj_pos.append(self.file_size)        
 
-        # Write Obj 4
         if self.compression:
             zip_obj = zlib.compress(bytes(''.join(self.obj_list), 'utf-8'))
             self.obj_length = len(zip_obj)
@@ -453,33 +403,95 @@ class DevicePDF(Device):
         self.fp.write(bytes("trailer<</Size %d/Root 1 0 R>>\n"%total_nobj,'utf-8'))
         self.fp.write(bytes("startxref\n%d\n"%start_xref,'utf-8'))
         self.fp.write(bytes("%%EOF",'utf-8'))
-        self.fp.close()
+
+        # 파일로 열었을 때만 닫기 (버퍼는 호출자가 관리)
+        if not self._is_buffer:
+            self.fp.close()
 
     def xs_(self, xx): return (xx-self.xmin)*self.scale*_points_inch
     def ys_(self, yy): return (yy-self.ymin)*self.scale*_points_inch
-          
-def save_pdf(coil, fname, trace=False, lcol='b', lthk=0.05, debug=False, lead_l=0, lead_r=0):
-    
+
+
+def save_svg(coil, fname, trace=False, lcol='b', lthk=0.05, debug=False, lead_l=0, lead_r=0):
     if trace:
         c1, c2, c3 = 'r', 'g', 'b'
-        xx, yy, seg = coil.create_geom(trace, lead_l, lead_r)
-        dev = DevicePDF(fname, xx, yy)
-        
-        bit=True
-        for i,s in enumerate(seg):
-            ii=i+1
-            if ii%2 == 0:
+        xx, yy, seg = coil.get_geom(trace, lead_l, lead_r)
+        dev = DeviceSVG(fname, xx, yy)
+        bit = True
+        for i, s in enumerate(seg):
+            ii = i + 1
+            if ii % 2 == 0:
                 dev.polyline(s[0], s[1], c2, lthk)
             else:
                 dev.polyline(s[0], s[1], c1 if bit else c3, lthk)
                 bit = not bit
     else:
-        xx, yy = coil.create_geom(trace, lead_l, lead_r)
-        dev = DevicePDF(fname, xx, yy)
+        xx, yy = coil.get_geom(trace, lead_l, lead_r)
+        dev = DeviceSVG(fname, xx, yy)
         dev.polyline(xx, yy, lcol, lthk)
-        
+
     if debug:
         draw_transition_ellipse(dev, coil)
-        
-    dev.close()                
 
+    dev.close()
+
+    # fname이 BytesIO면 seek(0) 후 반환
+    if isinstance(fname, io.BytesIO):
+        fname.seek(0)
+        return fname
+
+
+def save_ppt(coil, fname, trace=False, lcol='b', lthk=0.05, debug=False, lead_l=0, lead_r=0):
+    if trace:
+        c1, c2, c3 = 'r', 'g', 'b'
+        xx, yy, seg = coil.get_geom(trace, lead_l, lead_r)
+        dev = DevicePPT(fname, xx, yy)
+        bit = True
+        for i, s in enumerate(seg):
+            ii = i + 1
+            if ii % 2 == 0:
+                dev.polyline(s[0], s[1], c2, lthk)
+            else:
+                dev.polyline(s[0], s[1], c1 if bit else c3, lthk)
+                bit = not bit
+    else:
+        xx, yy = coil.get_geom(trace, lead_l, lead_r)
+        dev = DevicePPT(fname, xx, yy)
+        dev.polyline(xx, yy, lcol, lthk)
+
+    if debug:
+        draw_transition_ellipse(dev, coil)
+
+    dev.close()
+
+    if isinstance(fname, io.BytesIO):
+        fname.seek(0)
+        return fname
+
+
+def save_pdf(coil, fname, trace=False, lcol='b', lthk=0.05, debug=False, lead_l=0, lead_r=0):
+    if trace:
+        c1, c2, c3 = 'r', 'g', 'b'
+        xx, yy, seg = coil.get_geom(trace, lead_l, lead_r)
+        dev = DevicePDF(fname, xx, yy)
+        bit = True
+        for i, s in enumerate(seg):
+            ii = i + 1
+            if ii % 2 == 0:
+                dev.polyline(s[0], s[1], c2, lthk)
+            else:
+                dev.polyline(s[0], s[1], c1 if bit else c3, lthk)
+                bit = not bit
+    else:
+        xx, yy = coil.get_geom(trace, lead_l, lead_r)
+        dev = DevicePDF(fname, xx, yy)
+        dev.polyline(xx, yy, lcol, lthk)
+
+    if debug:
+        draw_transition_ellipse(dev, coil)
+
+    dev.close()
+
+    if isinstance(fname, io.BytesIO):
+        fname.seek(0)
+        return fname
