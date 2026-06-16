@@ -536,9 +536,8 @@ def three_delta(coil, lead_l, lead_r):
 
     xs, ys = [], []
     c1 = coil.create_geom(False, lead_l, lead_r)
-    x1, y1 = c1.get()
-    xs.append(x1)
-    ys.append(y1)
+    xs.append(c1.x)
+    ys.append(c1.y)
     
     c2 = c1.flipud().rotate(60, axis=0)
     xs.append(c2.x)
